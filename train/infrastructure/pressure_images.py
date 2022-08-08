@@ -1,0 +1,1 @@
+IMAGEDIR = "../pressure_images/"

@@ -1,0 +1,30 @@
+{
+    "case_title": "test",
+    "epochs": 150,
+    "learning_rate": 0.0005,
+    "batch_size": 128,
+    "eval_year": null,
+    "forecast_hour": 1,
+    "train_span": 1,
+    "forecast_span": 1,
+    "earlystop_endure":10,
+    "explanatory": {
+        "explanatory_dict_key": "explanatory",
+        "datetime": true,
+        "wave_class": true,
+        "ukb": true,
+        "kix": true,
+        "tomogashima": true,
+        "akashi": true,
+        "osaka": true,
+        "temperature": false,
+        "kobe_air_pressure": false,
+        "wave_significant_height": true,
+        "wave_significant_period": true
+    },
+    "target": {
+        "target_dict_key": "target",
+        "height": true,
+        "period": false
+    }
+}
