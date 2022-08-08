@@ -1,9 +1,9 @@
 env/
-admin/
-report/
 *.sqlite
-pressure_images/
-dataset_store/
+/admin/
+/report/
+/pressure_images/
+/train/dataset_store/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
