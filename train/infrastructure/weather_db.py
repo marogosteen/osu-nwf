@@ -1,7 +1,7 @@
 import sqlite3
 
 
-DBPATH = "../database.sqlite"
+DBPATH = "../weather.sqlite"
 
 
 class DbContext:

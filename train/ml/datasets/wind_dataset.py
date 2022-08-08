@@ -4,8 +4,8 @@ import torch
 from torch.utils.data import IterableDataset
 from torchvision import transforms
 
-from services.domain import pressure_image
-from infrastructure import database
+from services.domain.pressure_image import PressureImageReadService
+from infrastructure import weather_db
 
 
 class WindNWFDataset(IterableDataset):
@@ -39,8 +39,8 @@ class WindNWFDataset(IterableDataset):
         self.__currenttime = datetime.datetime(
             year=begin_year, month=1, day=1, hour=0, minute=0
         )
-        self.__pressure_readservice = pressure_image.PressureImageReadService()
-        self.__dbconnect = database.DbContext()
+        self.__pressure_readservice = PressureImageReadService()
+        self.__dbconnect = weather_db.DbContext()
         self.__transforms = transforms.ToTensor()
         self.truth_size = len(self.select_records)
 

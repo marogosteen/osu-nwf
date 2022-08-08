@@ -15,9 +15,9 @@ GRID_SIZE = 100
 MIN_PRESSURE = 955
 MAX_PRESSURE = 1060
 XX, YY = np.meshgrid(range(GRID_SIZE), range(GRID_SIZE))
-DBPATH = "pressure_db.sqlite"
+DBPATH = "../pressure_db.sqlite"
 START_TIME = datetime.datetime(year=2016, month=1, day=1, hour=0, minute=0)
-END_YEAR = 2018
+END_YEAR = 2020
 DBCONNECT = sqlite3.connect(DBPATH)
 CURSOR = DBCONNECT.cursor()
 
@@ -78,6 +78,8 @@ num_arg = len(sys.argv[1:])
 if num_arg != NUM_NEED_ARG:
     raise TypeError(f"takes exactly one argment ({num_arg} given)")
 output_dir = sys.argv[1]
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 
 pressure_delta = MAX_PRESSURE - MIN_PRESSURE
 points = fetch_pointarray()
@@ -85,13 +87,14 @@ place_indices = conv_index(points)
 corner_indices = fetch_corner(points)
 
 timedelta = datetime.timedelta(hours=1)
-pattern = "%Y-%m-%d %H:%M"
+db_pattern = "%Y-%m-%d %H:%M"
+filename_pattern = "%Y%m%d%H%M"
 time = START_TIME
 while True:
     if time.year == END_YEAR:
         break
 
-    str_time = time.strftime(pattern)
+    str_time = time.strftime(db_pattern)
     savedir = output_dir+f"{time.year}/{str(time.month).zfill(2)}/"
     savedir = os.path.join(
         output_dir,
@@ -131,7 +134,7 @@ ORDER BY
     pressure_array = pressure_array[-1::-1]
 
     img = Image.fromarray(pressure_array)
-    savepath = os.path.join(savedir, f"{str_time}.jpg")
+    savepath = os.path.join(savedir, f"{time.strftime(filename_pattern)}.jpg")
     img.save(savepath, quolity=100)
 
     time += timedelta
