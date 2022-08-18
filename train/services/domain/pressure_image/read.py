@@ -7,7 +7,7 @@ from infrastructure import pressure_images
 
 
 class PressureImageReadService():
-    pattern = "%Y-%m-%d %H:%M"
+    pattern = "%Y%m%d%H%M"
 
     def __init__(self) -> None:
         pass

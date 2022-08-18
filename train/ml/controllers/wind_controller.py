@@ -15,10 +15,11 @@ class WindTrainController:
     earlystop_endure = 10
 
     def __init__(
-            self,
-            train_dataset: wind_dataset.WindNWFDataset,
-            eval_dataset: wind_dataset.WindNWFDataset
+        self,
+        train_dataset: wind_dataset.WindNWFDataset,
+        eval_dataset: wind_dataset.WindNWFDataset
     ):
+
         self.__train_dataset = train_dataset
         self.__eval_dataset = eval_dataset
 
@@ -56,12 +57,10 @@ class WindTrainController:
         best_eval_loss = None
         train_loss_history = []
         eval_loss_history = []
-        # for epoch in tqdm(range(self.epochs)):
-        for epoch in range(self.epochs):
+        for epoch in tqdm(range(self.epochs)):
             # train
             net.train()
             train_loss: torch.nn.MSELoss = 0
-            print("train")
             for feature, truth in train_dataloader:
                 pred = net(feature)
                 train_loss = loss_func(pred, truth)
@@ -69,7 +68,7 @@ class WindTrainController:
                 optimizer.zero_grad()
                 train_loss.backward()
                 optimizer.step()
-            print("done train")
+
             train_loss_history.append(train_loss.item())
 
             # eval

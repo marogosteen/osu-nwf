@@ -1,7 +1,6 @@
 from ml.datasets import wind_dataset
 from ml.controllers.wind_controller import WindTrainController
 
-CONFIG_PATH = "config.json"
 
 # for year in [2016, 2017, 2018, 2019]:
 #     print(year)
@@ -18,8 +17,6 @@ CONFIG_PATH = "config.json"
 #     )
 #     controller = WindTrainController(train_dataset, eval_dataset)
 #     controller.train()
-
-
 year = 2017
 print(year)
 train_dataset = wind_dataset.WindNWFDataset(
