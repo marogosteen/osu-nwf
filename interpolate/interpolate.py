@@ -3,7 +3,6 @@ import os
 import sys
 
 import sqlite3
-import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from scipy.interpolate import Rbf
@@ -118,6 +117,10 @@ ORDER BY
 ;"""
     CURSOR.execute(query)
     records = CURSOR.fetchall()
+    if records.count((None)) > len(records)/2:
+        msg = f"欠損値が半数以上で、画像化できません。record time: {str_time}"
+        exit(msg)
+
     records = np.hstack((place_indices, records))
     records = records[records[:, 2] != None].astype(np.float64)
     rbf = Rbf(
