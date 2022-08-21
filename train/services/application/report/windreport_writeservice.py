@@ -36,18 +36,15 @@ class WindReportWriteService:
         save_path = self.report_dir + self.state_dict_name
         torch.save(state_dict, save_path)
 
-    def loss_history(self, train_loss_history: list, eval_loss_history: list) -> None:
+    def loss_history(self, loss_history: list) -> None:
         fig, ax = plt.subplots()
         ax.set(
-            title=f"best eval loss: {eval_loss_history.index(min(eval_loss_history))+1}",
+            title=f"best train loss: {loss_history.index(min(loss_history))+1}",
             xlabel="Epochs",
             ylabel="MSE Loss")
         ax.plot(
-            range(len(train_loss_history)),
-            train_loss_history, label="train")
-        ax.plot(
-            range(len(eval_loss_history)),
-            eval_loss_history, label="eval")
+            range(len(loss_history)),
+            loss_history, label="train")
         ax.grid()
         ax.legend()
         plt.subplots_adjust()
@@ -56,7 +53,7 @@ class WindReportWriteService:
     def train_result(self, net: net.NNWFNet, normalizer: transforms.Lambda, eval_dataset):
         # TODO filename
         with open("hoge.csv", "w") as f:
-            for feature, truth in eval_dataset:
+            for feature, _ in eval_dataset:
                 norm_feature = normalizer(feature)
                 feature.tolist()
                 predict = net(norm_feature)

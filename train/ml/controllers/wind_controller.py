@@ -8,8 +8,7 @@ from services.application import report
 
 
 class WindTrainController:
-    # epochs = 10000
-    epochs = 12
+    epochs = 10000
     batch_size = 128
     learning_rate = 0.0005
     earlystop_endure = 10
@@ -17,7 +16,7 @@ class WindTrainController:
     def __init__(
         self,
         train_dataset: wind_dataset.WindNWFDataset,
-        eval_dataset: wind_dataset.WindNWFDataset
+        eval_dataset: wind_dataset.WindNWFDataset,
     ):
 
         self.__train_dataset = train_dataset
@@ -29,17 +28,13 @@ class WindTrainController:
     def __exit__(self, exc_type, exc_value, traceback):
         if exc_type:
             raise exc_type(exc_value) from exc_type
-        self.__train_dataset.close()
-        self.__eval_dataset.close()
+        # self.__train_dataset.close()
+        # self.__eval_dataset.close()
         return True
 
     def train(self):
         train_dataloader = DataLoader(
             self.__train_dataset,
-            batch_size=self.batch_size
-        )
-        eval_dataloader = DataLoader(
-            self.__eval_dataset,
             batch_size=self.batch_size
         )
 
@@ -54,63 +49,54 @@ class WindTrainController:
 
         best_epoch = None
         best_state_dict = None
-        best_eval_loss = None
-        train_loss_history = []
-        eval_loss_history = []
+        best_loss = None
+        loss_history = []
         for epoch in tqdm(range(self.epochs)):
             # train
             net.train()
-            train_loss: torch.nn.MSELoss = 0
+            loss: torch.nn.MSELoss = 0
             for feature, truth in train_dataloader:
                 pred = net(feature)
-                train_loss = loss_func(pred, truth)
+                loss = loss_func(pred, truth)
 
                 optimizer.zero_grad()
-                train_loss.backward()
+                loss.backward()
                 optimizer.step()
 
-            train_loss_history.append(train_loss.item())
+            loss_history.append(float(loss))
 
-            # eval
-            net.eval()
-            count_batches = len(eval_dataloader)
-            eval_loss = 0
-            with torch.no_grad():
-                for feature, truth in eval_dataloader:
-                    eval_loss += loss_func(net(feature), truth).item()
-            eval_loss /= count_batches
-
-            eval_loss_history.append(eval_loss)
-
-            if not best_eval_loss:
+            if not best_loss:
                 best_epoch = epoch
-                best_eval_loss = eval_loss
+                best_loss = float(loss)
                 best_state_dict = net.state_dict()
 
-            elif best_eval_loss >= eval_loss:
+            elif best_loss >= loss:
                 best_epoch = epoch
-                best_eval_loss = eval_loss
+                best_loss = float(loss)
                 best_state_dict = net.state_dict()
 
-            if self.earlystop_endure < epoch - eval_loss_history.index(best_eval_loss):
+            if self.earlystop_endure < epoch - loss_history.index(best_loss):
                 print("Early Stop \n")
                 break
 
+        eval_dataloader = DataLoader(
+            self.__train_dataset,
+            batch_size=self.batch_size
+        )
         truths = []
         predicts = []
         net.eval()
-        for feature, truth in self.__eval_dataset:
+        for feature, truth in eval_dataloader:
             pred: torch.Tensor = net(feature)
-            pred_list = pred.tolist()
-            truths.append(truth.tolist())
-            predicts.append(pred_list)
-        report_service = report.WindReportWriteService()
+            truths.extend(truth.tolist())
+            predicts.extend(pred.tolist())
+        report_service = report.WindReportWriteService("sample_predwind", 2017)
         report_service.state_dict(best_state_dict)
-        report_service.loss_history(train_loss_history, eval_loss_history)
+        report_service.loss_history(loss_history)
         report_service.save_truths(truths)
         report_service.save_preds(predicts)
 
         print("done")
         print("best epoch: ", best_epoch + 1)
-        print("best eval loss: ", round(best_eval_loss, 5))
-        print("best eval RMSE: ", round(best_eval_loss**0.5, 5))
+        print("best eval loss: ", round(best_loss, 5))
+        print("best eval RMSE: ", round(best_loss**0.5, 5))

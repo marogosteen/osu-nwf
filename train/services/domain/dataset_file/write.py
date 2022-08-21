@@ -4,7 +4,7 @@ import string
 
 
 class DatasetFileWriteService:
-    dataset_dir = "dataset_store/"
+    dataset_dir = "../dataset_store/"
     str_length = 8
 
     def __init__(self, mode: str) -> None:
