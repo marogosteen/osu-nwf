@@ -2,9 +2,11 @@ import os
 import random
 import string
 
+from infrastructure import dataset_store
+
 
 class DatasetFileWriteService:
-    dataset_dir = "../dataset_store/"
+    dataset_dir = dataset_store.DATASET_STORE_DIR
     str_length = 8
 
     def __init__(self, mode: str) -> None:

@@ -6,7 +6,7 @@ from torch.utils.data import IterableDataset
 from torchvision import transforms
 from PIL import Image
 
-from infrastructure import pressure_images, weather_db
+from infrastructure import pressure_images, weather_db, dataset_store
 
 
 class WindRecord:
@@ -36,7 +36,7 @@ def from_record(record: list) -> WindRecord:
 
 
 class DatasetGenerator:
-    dataset_dir = "../dataset_store"
+    dataset_dir = dataset_store.DATASET_STORE_DIR
     filepattern = "%Y%m%d%H%M"
     recordpattern = "%Y-%m-%d %H:%M"
     select_records = [
@@ -130,12 +130,12 @@ class WindNWFDataset(IterableDataset):
     def __init__(
         self,
         datasetname: str,
-        generator: DatasetGenerator | None = None
+        generator: DatasetGenerator
     ) -> None:
-        if not generator is None:
-            generator.generate()
-
-        self.datasetpath = f"../dataset_store/{datasetname}.csv"
+        generator.generate()
+        self.datasetpath = os.path.join(
+            dataset_store.DATASET_STORE_DIR,
+            f"{datasetname}.csv")
         if not os.path.exists(self.datasetpath):
             mse = "\n".join(
                 [

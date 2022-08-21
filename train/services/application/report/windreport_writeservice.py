@@ -63,7 +63,7 @@ class WindReportWriteService:
         with open(path, mode="w") as f:
             for line in truths:
                 line = list(map(str, line))
-                line = ",".join(line)+"/"
+                line = ",".join(line)+"\n"
                 f.write(line)
 
     def save_preds(self, preds: list) -> None:
@@ -71,5 +71,5 @@ class WindReportWriteService:
         with open(path, mode="w") as f:
             for line in preds:
                 line = list(map(str, line))
-                line = ",".join(line)+"/"
+                line = ",".join(line)+"\n"
                 f.write(line)
