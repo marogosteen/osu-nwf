@@ -1,6 +1,6 @@
 from domain.tables import *
-from infrastructure import database
-from services import domain
+from infrastructure import weather_db
+from services.domain.record_db.service_models.record_model import RecordFetchServiceModel
 
 
 class RecordFetchService:
@@ -8,7 +8,7 @@ class RecordFetchService:
 
     def __init__(self, query: str) -> None:
         self.query = query
-        self.dbContext = database.DbContext()
+        self.dbContext = weather_db.DbContext()
         self.execute_sql()
         self.__buffer = iter([])
 
@@ -34,4 +34,4 @@ class RecordFetchService:
             self.fetch_many()
             record = next(self.__buffer)
 
-        return domain.RecordFetchServiceModel(record)
+        return RecordFetchServiceModel(record)

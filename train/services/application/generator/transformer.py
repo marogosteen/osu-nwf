@@ -2,8 +2,7 @@ import config
 import datetime
 import math
 
-from services.domain.service_models.record_model import RecordFetchServiceModel
-
+from services.domain.record_db.service_models.record_model import RecordFetchServiceModel
 
 class RecordTransformer:
     def __init__(self, dataset_config: config.Explanatory | config.Target) -> None:

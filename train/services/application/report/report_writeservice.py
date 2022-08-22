@@ -47,7 +47,7 @@ class ReportWriteService:
     def loss_history(self, train_loss_history: list, eval_loss_history: list) -> None:
         fig, ax = plt.subplots()
         ax.set(
-            title=f"best eval loss: {eval_loss_history.index(min(eval_loss_history))+1}",
+            title=f"best eval epoch: {eval_loss_history.index(min(eval_loss_history))+1}",
             xlabel="Epochs",
             ylabel="MSE Loss")
         ax.plot(

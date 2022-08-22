@@ -1,5 +1,6 @@
 import datetime
 import os
+import typing
 
 import torch
 from torch.utils.data import IterableDataset
@@ -71,15 +72,17 @@ class DatasetGenerator:
         self.__dbconnect = weather_db.DbContext()
 
     def generate(self) -> tuple[torch.Tensor, torch.Tensor]:
+        print(f"generating dataset({self.dataset_name})...")
         if not os.path.exists(self.dataset_dir):
             os.mkdir(self.dataset_dir)
         datasetfile = open(
-            os.path.join(self.dataset_dir, self.dataset_name),
-            mode="w")
+            os.path.join(self.dataset_dir, self.dataset_name), mode="w")
+        forecast_time = self.__currenttime + self.__forecast_timedelta
 
         while True:
-            if (self.__currenttime + self.__forecast_timedelta).year == self.__end_year:
+            if (forecast_time).year == self.__end_year:
                 datasetfile.close()
+                print(f"generated dataset({self.dataset_name}) !")
                 return
 
             # eval dataを学習に使用しない。
@@ -91,8 +94,7 @@ class DatasetGenerator:
             if not os.path.exists(imagepath):
                 exit(f"学習用画像ファイルがありません。 path:{imagepath}")
 
-            wind_query = self.__wind_query(
-                self.__currenttime + self.__forecast_timedelta)
+            wind_query = self.__wind_query(forecast_time)
             self.__dbconnect.cursor.execute(wind_query)
             wind_record = self.__dbconnect.cursor.fetchone()
             self.__currenttime += self.__timestep
@@ -100,7 +102,7 @@ class DatasetGenerator:
                 continue
 
             datasetfile.write(
-                f"{imagepath},{wind_record[0]},{wind_record[3]},{wind_record[6]}\n")
+                f"{forecast_time.strftime(self.recordpattern)},{imagepath},{wind_record[0]},{wind_record[3]},{wind_record[6]}\n")
 
     def __generate_imagepath(self, fetchtime: datetime.datetime) -> str:
         return os.path.join(
@@ -171,16 +173,26 @@ class WindNWFDataset(IterableDataset):
         self.datasetfile = open(self.datasetpath)
         return self
 
-    def __next__(self) -> tuple[torch.Tensor, torch.Tensor]:
+    def __next__(self) -> typing.Tuple[torch.Tensor, torch.Tensor]:
         line = self.datasetfile.readline()
         if not line:
             raise StopIteration
 
         line = line.strip().split(",")
-        imagepath = line[0]
-        truth = list(map(float, line[1:]))
+        imagepath = line[1]
+        truth = list(map(float, line[2:]))
 
         image = Image.open(imagepath).convert("RGB")
         image = self.__transforms(image).to(self.__device)
 
         return image, torch.Tensor(truth).to(self.__device)
+
+    def get_datasettime(self) -> list[str]:
+        datetimes = []
+        with open(self.datasetpath) as f:
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                datetimes.append(line.strip().split()[0])
+        return datetimes

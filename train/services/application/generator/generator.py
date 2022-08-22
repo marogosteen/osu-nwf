@@ -1,7 +1,9 @@
 import datetime
 
 import config
-from services import domain
+from services.domain.dataset_file.write import DatasetFileWriteService
+from services.domain.record_db.fetch import RecordFetchService
+from services.domain.record_db.service_models.record_model import RecordFetchServiceModel
 from services.application.generator import transformer
 
 
@@ -13,7 +15,7 @@ class GenerateResult:
 
 class RecordBuffer:
     def __init__(self) -> int:
-        self.buffer: list[domain.RecordFetchServiceModel] = []
+        self.buffer: list[RecordFetchServiceModel] = []
 
     def push(self, record):
         self.buffer.append(record)
@@ -23,10 +25,10 @@ class RecordBuffer:
         self.iter_queue = iter(self.buffer)
         return self
 
-    def __next__(self) -> domain.RecordFetchServiceModel:
+    def __next__(self) -> RecordFetchServiceModel:
         return next(self.iter_queue)
 
-    def __getitem__(self, num: int) -> domain.RecordFetchServiceModel:
+    def __getitem__(self, num: int) -> RecordFetchServiceModel:
         return self.buffer[num]
 
 
@@ -37,15 +39,15 @@ class DatasetGenerator:
         self.mode = mode
         self.forecast_hour = nwf_config.forecast_hour
 
-        self.__write_service = domain.DatasetFileWriteService(mode)
+        self.__write_service = DatasetFileWriteService(mode)
         self.__explanatory_transformer = transformer.RecordTransformer(
             nwf_config.explanatory)
         self.__target_transformer = transformer.RecordTransformer(
             nwf_config.target)
 
-        self.__feature_fetch_service = domain.RecordFetchService(
+        self.__feature_fetch_service = RecordFetchService(
             sql_query)
-        self.__truth_fetch_service = domain.RecordFetchService(
+        self.__truth_fetch_service = RecordFetchService(
             sql_query)
 
         # truthは数時刻先のRecordを返す
@@ -103,7 +105,7 @@ class DatasetGenerator:
 
     # record must be continuous as a time series.
     def __is_inferiority(self) -> bool:
-        record: domain.RecordFetchServiceModel
+        record: RecordFetchServiceModel
 
         time_delta = datetime.timedelta(hours=1)
         confirm_time: datetime.datetime = None

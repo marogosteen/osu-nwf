@@ -1,3 +1,4 @@
+import datetime
 import os
 import json
 
@@ -16,8 +17,8 @@ class WindReportWriteService:
     truthfilename: str = "truth.csv"
     predfilename: str = "pred.csv"
 
-    def __init__(self, reportname: str, eval_year: int) -> None:
-        self.report_dir += f"{reportname}/{eval_year}/"
+    def __init__(self, reportname: str) -> None:
+        self.report_dir = os.path.join(self.report_dir, reportname)
         if not os.path.exists(self.report_dir):
             os.makedirs(self.report_dir)
 
@@ -27,10 +28,6 @@ class WindReportWriteService:
             nwf_config.explanatory)
         config_dict[nwf_config.target.target_dict_key] = vars(
             nwf_config.target)
-
-        save_path = self.report_dir + self.config_name
-        with open(save_path, mode="w") as f:
-            json.dump(config_dict, f)
 
     def state_dict(self, state_dict):
         save_path = self.report_dir + self.state_dict_name
@@ -58,18 +55,20 @@ class WindReportWriteService:
                 feature.tolist()
                 predict = net(norm_feature)
 
-    def save_truths(self, truths: list) -> None:
+    def save_truths(self, truths: list, datetimes: list[datetime.datetime]) -> None:
         path = self.report_dir + self.truthfilename
         with open(path, mode="w") as f:
-            for line in truths:
+            for line, s in zip(truths, datetimes):
                 line = list(map(str, line))
+                line.insert(0, s)
                 line = ",".join(line)+"\n"
                 f.write(line)
 
-    def save_preds(self, preds: list) -> None:
+    def save_preds(self, preds: list, datetimes: list[datetime.datetime]) -> None:
         path = self.report_dir + self.predfilename
         with open(path, mode="w") as f:
-            for line in preds:
+            for line, s in zip(preds, datetimes):
                 line = list(map(str, line))
+                line.insert(0, s)
                 line = ",".join(line)+"\n"
                 f.write(line)
