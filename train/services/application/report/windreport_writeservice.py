@@ -1,6 +1,5 @@
 import datetime
 import os
-import json
 
 import torch
 from torchvision import transforms
@@ -16,8 +15,10 @@ class WindReportWriteService:
     state_dict_name: str = "state_dict.pt"
     truthfilename: str = "truth.csv"
     predfilename: str = "pred.csv"
+    lossimagefilename: str = "loss_history.jpg"
 
-    def __init__(self, reportname: str) -> None:
+    def __init__(self, reportname: str, target_year: int) -> None:
+        reportname = os.path.join(reportname, str(target_year))
         self.report_dir = os.path.join(self.report_dir, reportname)
         if not os.path.exists(self.report_dir):
             os.makedirs(self.report_dir)
@@ -29,12 +30,15 @@ class WindReportWriteService:
         config_dict[nwf_config.target.target_dict_key] = vars(
             nwf_config.target)
 
+    def state_dict_path(self) -> str:
+        return os.path.join(self.report_dir, self.state_dict_name)
+
     def state_dict(self, state_dict):
-        save_path = self.report_dir + self.state_dict_name
+        save_path = os.path.join(self.report_dir, self.state_dict_name)
         torch.save(state_dict, save_path)
 
     def loss_history(self, loss_history: list) -> None:
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
         ax.set(
             title=f"best train loss: {loss_history.index(min(loss_history))+1}",
             xlabel="Epochs",
@@ -45,7 +49,7 @@ class WindReportWriteService:
         ax.grid()
         ax.legend()
         plt.subplots_adjust()
-        plt.savefig(self.report_dir+"loss_history.jpg")
+        plt.savefig(os.path.join(self.report_dir, self.lossimagefilename))
 
     def train_result(self, net: net.NNWFNet, normalizer: transforms.Lambda, eval_dataset):
         # TODO filename
@@ -56,7 +60,7 @@ class WindReportWriteService:
                 predict = net(norm_feature)
 
     def save_truths(self, truths: list, datetimes: list[datetime.datetime]) -> None:
-        path = self.report_dir + self.truthfilename
+        path = os.path.join(self.report_dir, self.truthfilename)
         with open(path, mode="w") as f:
             for line, s in zip(truths, datetimes):
                 line = list(map(str, line))
@@ -65,7 +69,7 @@ class WindReportWriteService:
                 f.write(line)
 
     def save_preds(self, preds: list, datetimes: list[datetime.datetime]) -> None:
-        path = self.report_dir + self.predfilename
+        path = os.path.join(self.report_dir, self.predfilename)
         with open(path, mode="w") as f:
             for line, s in zip(preds, datetimes):
                 line = list(map(str, line))

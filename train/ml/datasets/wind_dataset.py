@@ -71,28 +71,33 @@ class DatasetGenerator:
             year=begin_year, month=1, day=1, hour=0, minute=0)
         self.__dbconnect = weather_db.DbContext()
 
-    def generate(self) -> tuple[torch.Tensor, torch.Tensor]:
-        print(f"generating dataset({self.dataset_name})...")
+    def generate(self) -> None:
         if not os.path.exists(self.dataset_dir):
             os.mkdir(self.dataset_dir)
-        datasetfile = open(
-            os.path.join(self.dataset_dir, self.dataset_name), mode="w")
-        forecast_time = self.__currenttime + self.__forecast_timedelta
 
+        datasetfile_path = os.path.join(self.dataset_dir, self.dataset_name)
+        if os.path.exists(datasetfile_path):
+            return
+
+        print(f"generating dataset({self.dataset_name})...")
+        datasetfile = open(datasetfile_path, mode="w")
         while True:
-            if (forecast_time).year == self.__end_year:
+            forecast_time = self.__currenttime + self.__forecast_timedelta
+
+            if forecast_time.year == self.__end_year:
                 datasetfile.close()
-                print(f"generated dataset({self.dataset_name}) !")
+                print(f"generate complete! ({self.dataset_name})")
                 return
 
             # eval dataを学習に使用しない。
-            if self.__currenttime.year == self.__target_year:
+            if forecast_time.year == self.__target_year:
                 self.__currenttime = datetime.datetime(
                     year=self.__currenttime.year+1, month=1, day=1, hour=0, minute=0)
+                continue
 
             imagepath = self.__generate_imagepath(self.__currenttime)
             if not os.path.exists(imagepath):
-                exit(f"学習用画像ファイルがありません。 path:{imagepath}")
+                raise FileExistsError(f"学習用画像ファイルがありません。 path:{imagepath}")
 
             wind_query = self.__wind_query(forecast_time)
             self.__dbconnect.cursor.execute(wind_query)
@@ -138,19 +143,16 @@ class WindNWFDataset(IterableDataset):
         self.datasetpath = os.path.join(
             dataset_store.DATASET_STORE_DIR,
             f"{datasetname}.csv")
+
         if not os.path.exists(self.datasetpath):
-            mse = "\n".join(
-                [
-                    "dataset fileが見つかりません。",
-                    "path: "+self.datasetpath,
-                    "cwd: "+os.getcwd()])
-            raise FileNotFoundError(mse)
+            mse = f"dataset fileが見つかりません。path: {self.datasetpath} cwd: {os.getcwd()}"
+            raise FileExistsError(mse)
 
         self.__device = "cuda" if torch.cuda.is_available() else "cpu"
         self.__len = self.__get_length()
         self.__transforms = transforms.ToTensor()
         self.__truth_size = len(
-            open(self.datasetpath).readline().strip().split(",")[1:])
+            open(self.datasetpath).readline().strip().split(",")[2:])
 
     @property
     def truth_size(self):
