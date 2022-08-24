@@ -37,6 +37,7 @@ class WindTrainController:
         return True
 
     def train_model(self) -> Tuple[models.DenseNet, list, dict]:
+        print("traning model...")
         train_dataloader = DataLoader(
             self.__train_dataset, batch_size=self.batch_size)
         best_state_dict = None
@@ -45,15 +46,17 @@ class WindTrainController:
         for epoch in tqdm(range(self.epochs)):
             # train
             self.__net.train()
-            loss: torch.nn.MSELoss = 0
+            sumloss = 0
             for feature, truth in train_dataloader:
                 pred = self.__net(feature)
                 loss = self.__loss_func(pred, truth)
+                sumloss += float(loss)
                 self.__optimizer.zero_grad()
                 loss.backward()
                 self.__optimizer.step()
 
-            loss_history.append(float(loss))
+            meanloss = sumloss / len(train_dataloader)
+            loss_history.append(meanloss)
 
             if not best_loss:
                 best_loss = float(loss)
@@ -66,4 +69,5 @@ class WindTrainController:
                 print("Early Stop \n")
                 break
 
+        print("complete train!")
         return self.__net, loss_history, best_state_dict

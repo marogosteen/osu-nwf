@@ -20,8 +20,9 @@ if __name__ == "__main__":
 
         report_service = report.WindReportWriteService(
             reportname=reportname, target_year=year)
-
         datasetname = reportname+str(year)
+
+        # IterableDatasetをDatasetにしたい
         train_dataset = wind_dataset.WindNWFDataset(
             generator=wind_dataset.DatasetGenerator(
                 begin_year=2016,
@@ -35,17 +36,23 @@ if __name__ == "__main__":
         optimizer = torch.optim.Adam(
             net.parameters(), lr=learning_rate)
         loss_func = torch.nn.MSELoss()
-
         controller = WindTrainController(
             train_dataset=train_dataset,
             net=net,
             optimizer=optimizer,
             loss_func=loss_func)
+
         state_dict_path = report_service.state_dict_path()
         if not os.path.exists(state_dict_path):
             net, loss_history, state_dict = controller.train_model()
+
             report_service.state_dict(state_dict)
             report_service.loss_history(loss_history)
+            best_trainloss = min(loss_history)
+            print("best epoch: ", loss_history.index(best_trainloss) + 1)
+            print("best train loss: ", round(min(best_trainloss), 5))
+            print("best train RMSE: ", round(best_trainloss**0.5, 5))
+
         else:
             net.load_state_dict(torch.load(state_dict_path))
 
@@ -56,25 +63,26 @@ if __name__ == "__main__":
                 forecast_timedelta=forecast_timedelta,
                 datasetname=datasetname+"eval"),
             datasetname=datasetname+"eval")
-        dataloader = DataLoader(eval_dataset, batch_size=controller.batch_size)
+        eval_dataloader = DataLoader(
+            eval_dataset, batch_size=controller.batch_size)
 
+        # このメソッド作りたい
         truths = []
         predicts = []
         net.eval()
-        for feature, truth in dataloader:
-            pred: torch.Tensor = net(feature)
-            truths.append(truth)
-            predicts.append(pred)
-        truths = torch.cat(truths)
-        predicts = torch.cat(predicts)
+        truth: torch.Tensor
+        pred: torch.Tensor
+        eval_loss = 0
+        for feature, truth in eval_dataloader:
+            pred = net(feature)
+            eval_loss += float(loss_func(truth, pred))
+            truths.extend(truth.tolist())
+            predicts.extend(pred.tolist())
+        eval_loss /= len(eval_dataloader)
 
         datetimes = eval_dataset.get_datasettime()
-        report_service.save_truths(truths.tolist(), datetimes)
-        report_service.save_preds(predicts.tolist(), datetimes)
+        report_service.save_truths(truths, datetimes)
+        report_service.save_preds(predicts, datetimes)
 
-        best_trainloss = min(loss_history)
+        print("eval RMSE:", round(eval_loss**0.5, 5))
         print("done")
-        print("best epoch: ", loss_history.index(best_trainloss) + 1)
-        print("best train loss: ", round(min(best_trainloss), 5))
-        print("best train RMSE: ", round(best_trainloss**0.5, 5))
-        print("eval RMSE:", round(float(loss_func(truths, predicts))**0.5), 5)
