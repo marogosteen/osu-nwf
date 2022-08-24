@@ -50,7 +50,7 @@ if __name__ == "__main__":
             report_service.loss_history(loss_history)
             best_trainloss = min(loss_history)
             print("best epoch: ", loss_history.index(best_trainloss) + 1)
-            print("best train loss: ", round(min(best_trainloss), 5))
+            print("best train loss: ", round(best_trainloss, 5))
             print("best train RMSE: ", round(best_trainloss**0.5, 5))
 
         else:
@@ -80,7 +80,7 @@ if __name__ == "__main__":
             predicts.extend(pred.tolist())
         eval_loss /= len(eval_dataloader)
 
-        datetimes = eval_dataset.get_datasettime()
+        datetimes = eval_dataset.get_datasettimes()
         report_service.save_truths(truths, datetimes)
         report_service.save_preds(predicts, datetimes)
 
