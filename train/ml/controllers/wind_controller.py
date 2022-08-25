@@ -10,7 +10,7 @@ from torchvision import models
 
 class WindTrainController:
     epochs = 1000
-    batch_size = 128
+    batch_size = 256
     learning_rate = 0.0005
     earlystop_endure = 10
 
@@ -39,7 +39,7 @@ class WindTrainController:
     def train_model(self) -> Tuple[models.DenseNet, list, dict]:
         print("traning model...")
         train_dataloader = DataLoader(
-            self.__train_dataset, batch_size=self.batch_size)
+            self.__train_dataset, batch_size=self.batch_size, shuffle=True)
         best_state_dict = None
         best_loss = None
         loss_history = []
@@ -59,10 +59,10 @@ class WindTrainController:
             loss_history.append(meanloss)
 
             if not best_loss:
-                best_loss = float(loss)
+                best_loss = float(meanloss)
                 best_state_dict = self.__net.state_dict()
-            elif best_loss >= loss:
-                best_loss = float(loss)
+            elif best_loss >= meanloss:
+                best_loss = float(meanloss)
                 best_state_dict = self.__net.state_dict()
 
             if self.earlystop_endure < epoch - loss_history.index(best_loss):
