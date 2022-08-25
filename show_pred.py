@@ -1,13 +1,31 @@
+import datetime
 import os
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import dates
 
-def rmse(o:list, p:list):
+
+DATETIME_PATTERN = "%Y-%m-%d %H:%M"
+
+
+def rmse(o: list, p: list):
     oa = np.array(o)
     pa = np.array(p)
     return np.sqrt(np.mean(np.square(oa - pa)))
 
+
+def cast_trainresult(l: str) -> list:
+    l = l.strip().split(",")
+    l[datetimecol] = datetime.datetime.strptime(
+        l[datetimecol], DATETIME_PATTERN)
+    l[ukbcol] = float(l[ukbcol])
+    l[kixcol] = float(l[kixcol])
+    l[tomogashimacol] = float(l[tomogashimacol])
+    return l
+
+
+datetimecol = 0
 ukbcol = 1
 kixcol = 2
 tomogashimacol = 3
@@ -16,63 +34,58 @@ forecast_timedelta = 1
 reportdir = f"report/windvelocity_{forecast_timedelta}hourlater/{year}"
 truthpath = os.path.join(reportdir, "truth.csv")
 predpath = os.path.join(reportdir, "pred.csv")
+truths = list(map(cast_trainresult, open(truthpath).readlines()))
+preds = list(map(cast_trainresult, open(predpath).readlines()))
 
+ax: list[plt.Axes]
 fig, ax = plt.subplots(3, 1)
+datetimes: list[datetime.datetime] = list(
+    map(lambda l: l[datetimecol], truths))
 
-ukb_observed = list(map(
-    lambda l: float(l.strip().split(",")[ukbcol]),
-    open(truthpath).readlines()))
-ukb_predicted = list(map(
-    lambda l: float(l.strip().split(",")[ukbcol]),
-    open(predpath).readlines()))
+# ukb
+observed: list[float] = list(map(lambda l: l[ukbcol], truths))
+predicted: list[float] = list(map(lambda l: l[ukbcol], preds))
+msg = f"obs: {len(observed)}, prd: {len(predicted)}"
+assert len(observed) == len(predicted), msg
 
-b = len(ukb_observed) == len(ukb_predicted)
-msg = f"obs: {len(ukb_observed)}, prd: {len(ukb_predicted)}"
-assert b, msg
-
-ax[0].plot(range(len(ukb_observed)), ukb_observed, label="observed")
-ax[0].plot(range(len(ukb_predicted)), ukb_predicted, label="predicted")
-ax[0].set_title("ukb")
-ax[0].set_xlim([5800, 6400])
+ax[0].plot(datetimes, observed, label="observed")
+ax[0].plot(datetimes, predicted, label="predicted")
+ax[0].set_title(str(year)+"ukb")
+ax[0].set_ylabel("wind velocity")
+ax[0].set_xlabel("datetime")
 ax[0].set_ylim([0, 40])
+ax[0].xaxis.set_major_formatter(dates.DateFormatter('%Y年\n%m月%d日%H時'))
+print(f"{year}ukb RMSE:", round(rmse(observed, predicted), 4))
 
-kix_observed = list(map(
-    lambda l: float(l.strip().split(",")[kixcol]),
-    open(truthpath).readlines()))
-kix_predicted = list(map(
-    lambda l: float(l.strip().split(",")[kixcol]),
-    open(predpath).readlines()))
+# kix
+observed: list[float] = list(map(lambda l: l[kixcol], truths))
+predicted: list[float] = list(map(lambda l: l[kixcol], preds))
+msg = f"obs: {len(observed)}, prd: {len(predicted)}"
+assert len(observed) == len(predicted), msg
 
-b = len(kix_observed) == len(kix_predicted)
-msg = f"obs: {len(kix_observed)}, prd: {len(kix_predicted)}"
-assert b, msg
-
-ax[1].plot(range(len(kix_observed)), kix_observed, label="observed")
-ax[1].plot(range(len(kix_predicted)), kix_predicted, label="predicted")
-ax[1].set_title("kix")
-ax[1].set_xlim([5800, 6400])
+ax[1].plot(datetimes, observed, label="observed")
+ax[1].plot(datetimes, predicted, label="predicted")
+ax[1].set_title(str(year)+"kix")
+ax[1].set_ylabel("wind velocity")
+ax[1].set_xlabel("datetime")
 ax[1].set_ylim([0, 40])
+ax[1].xaxis.set_major_formatter(dates.DateFormatter('%Y年\n%m月%d日%H時'))
+print(f"{year}kix RMSE:", round(rmse(observed, predicted), 4))
 
-tomogashima_observed = list(map(
-    lambda l: float(l.strip().split(",")[tomogashimacol]),
-    open(truthpath).readlines()))
-tomogashima_predicted = list(map(
-    lambda l: float(l.strip().split(",")[tomogashimacol]),
-    open(predpath).readlines()))
+# tomogashima
+observed: list[float] = list(map(lambda l: l[tomogashimacol], truths))
+predicted: list[float] = list(map(lambda l: l[tomogashimacol], preds))
+msg = f"obs: {len(observed)}, prd: {len(predicted)}"
+assert len(observed) == len(predicted), msg
 
-b = len(tomogashima_observed) == len(tomogashima_predicted)
-msg = f"obs: {len(tomogashima_observed)}, prd: {len(tomogashima_predicted)}"
-assert b, msg
-
-ax[2].plot(range(len(tomogashima_observed)), tomogashima_observed, label="observed")
-ax[2].plot(range(len(tomogashima_predicted)), tomogashima_predicted, label="predicted")
-ax[2].set_title("tomogashima")
-ax[2].set_xlim([5800, 6400])
+ax[2].plot(datetimes, observed, label="observed")
+ax[2].plot(datetimes, predicted, label="predicted")
+ax[2].set_title(str(year)+"tomogashima")
+ax[2].set_ylabel("wind velocity")
+ax[2].set_xlabel("datetime")
 ax[2].set_ylim([0, 40])
-
-print(f"{year}ukb RMSE:", round(rmse(ukb_observed, ukb_predicted), 4))
-print(f"{year}kix RMSE:", round(rmse(kix_observed, kix_predicted), 4))
-print(f"{year}tomogashima RMSE:", round(rmse(tomogashima_observed, tomogashima_predicted), 4))
+ax[2].xaxis.set_major_formatter(dates.DateFormatter('%Y年\n%m月%d日%H時'))
+print(f"{year}tomogashima RMSE:", round(rmse(observed, predicted), 4))
 
 # plt.tight_layout()
 # plt.show()
