@@ -6,7 +6,7 @@ from torch.utils.data import IterableDataset
 from torchvision import transforms
 from PIL import Image
 
-from ml.datasets import wind_dataset
+from ml.datasets import wind_velocity_dataset
 from infrastructure import dataset_store
 
 
@@ -14,7 +14,7 @@ class WindNWFDataset(IterableDataset):
     def __init__(
         self,
         datasetname: str,
-        generator: wind_dataset.DatasetGenerator
+        generator: wind_velocity_dataset.DatasetGenerator
     ) -> None:
         generator.generate()
         self.datasetpath = os.path.join(

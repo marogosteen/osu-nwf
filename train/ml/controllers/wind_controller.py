@@ -4,7 +4,7 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 
-from ml.datasets import wind_dataset
+from ml.datasets import wind_velocity_dataset
 from torchvision import models
 
 
@@ -16,13 +16,14 @@ class WindTrainController:
 
     def __init__(
         self,
-        train_dataset: wind_dataset.WindNWFDataset,
+        train_dataset: wind_velocity_dataset.WindNWFDataset,
         net: models.DenseNet,
         optimizer: torch.optim.Adam,
         loss_func: torch.nn.MSELoss
     ):
+        self.__device = "cuda" if torch.cuda.is_available() else "cpu"
         self.__train_dataset = train_dataset
-        self.__net = net
+        self.__net = net.to(self.__device)
         self.__optimizer = optimizer
         self.__loss_func = loss_func
 
@@ -32,8 +33,6 @@ class WindTrainController:
     def __exit__(self, exc_type, exc_value, traceback):
         if exc_type:
             raise exc_type(exc_value) from exc_type
-        # self.__train_dataset.close()
-        # self.__eval_dataset.close()
         return True
 
     def train_model(self) -> Tuple[models.DenseNet, list, dict]:
@@ -47,7 +46,11 @@ class WindTrainController:
             # train
             self.__net.train()
             sumloss = 0
+            feature: torch.Tensor
+            truth: torch.Tensor
             for feature, truth in train_dataloader:
+                feature.to(self.__device)
+                truth.to(self.__device)
                 pred = self.__net(feature)
                 loss = self.__loss_func(pred, truth)
                 sumloss += float(loss)

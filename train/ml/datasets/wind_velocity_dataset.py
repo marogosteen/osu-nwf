@@ -10,32 +10,6 @@ from PIL import Image
 from infrastructure import pressure_images, weather_db, dataset_store
 
 
-class WindRecord:
-    ukb_velocity: float
-    ukb_sin_direction: float
-    ukb_cos_direction: float
-    kix_velocity: float
-    kix_sin_direction: float
-    kix_cos_direction: float
-    tomogashima_velocity: float
-    tomogashima_sin_direction: float
-    tomogashima_cos_directio: float
-
-
-def from_record(record: list) -> WindRecord:
-    wind_record = WindRecord()
-    wind_record.ukb_velocity = record[0]
-    wind_record.ukb_sin_direction = record[1]
-    wind_record.ukb_cos_direction = record[2]
-    wind_record.kix_velocity = record[3]
-    wind_record.kix_sin_direction = record[4]
-    wind_record.kix_cos_direction = record[5]
-    wind_record.tomogashima_velocity = record[6]
-    wind_record.tomogashima_sin_direction = record[7]
-    wind_record.tomogashima_cos_directio = record[8]
-    return wind_record
-
-
 class DatasetGenerator:
     dataset_dir = dataset_store.DATASET_STORE_DIR
     filepattern = "%Y%m%d%H%M"
@@ -150,7 +124,6 @@ class WindNWFDataset(Dataset):
             raise FileExistsError(mse)
         self.dataset_list: list = list(map(
             lambda l: l.strip().split(","), open(self.datasetpath).readlines()))
-        self.__device = "cuda" if torch.cuda.is_available() else "cpu"
         self.__len = len(self.dataset_list)
         self.__transforms = transforms.ToTensor()
         self.__truth_size = len(
@@ -166,9 +139,9 @@ class WindNWFDataset(Dataset):
     def __getitem__(self, idx: int) -> typing.Tuple[torch.Tensor, torch.Tensor]:
         line = self.dataset_list[idx]
         image = Image.open(line[1]).convert("RGB")
-        image = self.__transforms(image).to(self.__device)
+        image = self.__transforms(image)
         truth = list(map(float, line[self.label_startcol:]))
-        return image, torch.Tensor(truth).to(self.__device)
+        return image, torch.Tensor(truth)
 
     def get_datasettimes(self) -> list[str]:
         datetimes = []
