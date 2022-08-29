@@ -11,15 +11,13 @@ from services.application import report
 
 forecast_timedelta = 1
 learning_rate = 0.0005
-reportname = f"winddirection_{forecast_timedelta}hourlater"
-
 if __name__ == "__main__":
     for year in [2016, 2017, 2018, 2019]:
-        print(reportname, year)
+        datasetname = f"winddirection_{forecast_timedelta}hourlater{year}"
+        print(datasetname, year)
 
         report_service = report.WindReportWriteService(
-            reportname=reportname, target_year=year)
-        datasetname = reportname+str(year)
+            reportname=datasetname, target_year=year)
 
         train_dataset = wind_direction_dataset.WindNWFDataset(
             generator=wind_direction_dataset.DatasetGenerator(
@@ -27,8 +25,10 @@ if __name__ == "__main__":
                 end_year=2020,
                 target_year=year,
                 forecast_timedelta=forecast_timedelta,
-                datasetname=datasetname+"train"),
-            datasetname=datasetname+"train")
+                datasetname=datasetname+"train"
+            )
+        )
+
         net = models.DenseNet(
             num_classes=train_dataset.truth_size)
         optimizer = torch.optim.Adam(
@@ -39,7 +39,7 @@ if __name__ == "__main__":
             net=net,
             optimizer=optimizer,
             loss_func=loss_func)
-
+        
         state_dict_path = report_service.state_dict_path()
         if not os.path.exists(state_dict_path):
             net, loss_history, state_dict = controller.train_model()
@@ -59,8 +59,9 @@ if __name__ == "__main__":
                 begin_year=year,
                 end_year=year+1,
                 forecast_timedelta=forecast_timedelta,
-                datasetname=datasetname+"eval"),
-            datasetname=datasetname+"eval")
+                datasetname=datasetname+"eval"
+            )
+        )
         eval_dataloader = DataLoader(
             eval_dataset, batch_size=controller.batch_size)
 

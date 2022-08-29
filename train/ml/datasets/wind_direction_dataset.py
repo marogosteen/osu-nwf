@@ -13,7 +13,7 @@ from infrastructure import pressure_images, weather_db, dataset_store
 
 class DatasetGenerator:
     dataset_dir = os.path.join(dataset_store.DATASET_STORE_DIR, "direction")
-    filepattern = "%Y%m%d%H%M"
+    filenamepattern = "%Y%m%d%H%M"
     recordpattern = "%Y-%m-%d %H:%M"
     select_records = [
         "ukb.sin_direction",
@@ -28,42 +28,43 @@ class DatasetGenerator:
         self,
         datasetname: str,
         begin_year: int,
-        end_yaer: int,
+        end_year: int,
         target_year: int | None = None,
         forecast_timedelta: int = 1
     ) -> None:
 
-        self.dataset_name = f"{datasetname}.csv"
         self.datasetfile_path = os.path.join(
-            self.dataset_dir, self.dataset_name)
+            self.dataset_dir, f"{datasetname}.csv")
         self.__target_year = target_year
-        self.__end_year = end_yaer
+        self.__end_year = end_year
         self.__timedelta_1hour = datetime.timedelta(hours=1)
         self.__forecast_timedelta = datetime.timedelta(
             hours=forecast_timedelta)
         self.__currenttime = datetime.datetime(
             year=begin_year, month=1, day=1, hour=0, minute=0)
         self.__dbconnect = weather_db.DbContext()
+        self.__init_record_buf()
 
-    def is_generated(self) -> bool:
-        return os.path.exists(self.datasetfile_path)
+    def delete_dataset(self):
+        if self.is_generated():
+            self.datasetfile.close()
+            os.remove(self.datasetfile_path)
 
     def generate(self) -> None:
         if not os.path.exists(self.dataset_dir):
             os.makedirs(self.dataset_dir)
 
-        print(f"generating dataset({self.dataset_name})...")
-        datasetfile = open(self.datasetfile_path, mode="w")
-        query = self.__query()
-        self.__dbconnect.cursor.execute(query)
+        print(f"generating dataset({self.datasetfile_path})...")
+        self.datasetfile = open(self.datasetfile_path, mode="w")
         while True:
-            try:
-                record = next(records)
-            except StopIteration:
-                records = iter(self.__dbconnect.cursor.fetchmany(1000))
-                if not records:
-                    break
-                record = next(records)
+            record = self.next_buf()
+            if record is None:
+                break
+            record_datetime = datetime.datetime.strptime(
+                record[0], self.recordpattern)
+
+            if record_datetime.year == self.__target_year:
+                continue
 
             forecast_time = self.__forecast_datetime()
             # evaldatasetの場合、時間ベースで停止すれば全てFetchする必要がなくなる。
@@ -77,9 +78,9 @@ class DatasetGenerator:
                 continue
 
             # 観測データが抜けて予測時差が一致しないととデータセットとして破綻する。
-            while datetime.datetime.strptime(record[0], self.recordpattern) != forecast_time:
+            while record_datetime != forecast_time:
                 print(f"気象データの欠損があります。 \ndatetime: {forecast_time}")
-                forecast_time += self.__timedelta_1hour
+                self.__currenttime += self.__timedelta_1hour
 
             imagepath = self.__generate_imagepath(self.__currenttime)
             if not os.path.exists(imagepath):
@@ -90,15 +91,36 @@ class DatasetGenerator:
                 continue
 
             direction_class = ",".join(map(str, [
-                self.__conv_directionclass(record[0], record[1]),
-                self.__conv_directionclass(record[2], record[3]),
-                self.__conv_directionclass(record[4], record[5])
+                self.__conv_directionclass(record[1], record[2]),
+                self.__conv_directionclass(record[3], record[4]),
+                self.__conv_directionclass(record[5], record[6])
             ]))
-            datasetfile.write(
+            self.datasetfile.write(
                 f"{forecast_time.strftime(self.recordpattern)},{imagepath},{direction_class}\n")
 
-        datasetfile.close()
-        print(f"generate complete! ({self.dataset_name})")
+        self.datasetfile.close()
+        print(f"generate complete! ({self.datasetfile_path})")
+
+    def is_generated(self) -> bool:
+        return os.path.exists(self.datasetfile_path)
+
+    def __init_record_buf(self):
+        query = self.__query()
+        self.__dbconnect.cursor.execute(query)
+        self.records_buf = []
+        first_forecastdatetime = self.__forecast_datetime().strftime(self.recordpattern)
+        self.records_buf: list = self.__dbconnect.cursor.fetchmany(1000)
+        record = self.next_buf()
+        while record[0] != first_forecastdatetime:
+            record = self.next_buf()
+        self.records_buf.insert(0, record)
+
+    def next_buf(self) -> list:
+        if len(self.records_buf) == 0:
+            self.records_buf: list = self.__dbconnect.cursor.fetchmany(1000)
+            if len(self.records_buf) == 0:
+                return None
+        return self.records_buf.pop(0)
 
     def __forecast_datetime(self) -> datetime.datetime:
         return self.__currenttime + self.__forecast_timedelta
@@ -108,7 +130,7 @@ class DatasetGenerator:
             pressure_images.IMAGEDIR,
             str(fetchtime.year),
             str(fetchtime.month).zfill(2),
-            fetchtime.strftime(self.filepattern)+".jpg"
+            fetchtime.strftime(self.filenamepattern)+".jpg"
         )
 
     # TODO magic number
@@ -159,16 +181,20 @@ class WindNWFDataset(Dataset):
 
     def __init__(
         self,
-        datasetname: str,
         generator: DatasetGenerator
     ) -> None:
-        generator.generate()
-        self.datasetpath = os.path.join(
-            dataset_store.DATASET_STORE_DIR, f"{datasetname}.csv")
+        if not generator.is_generated():
+            try:
+                generator.generate()
+            except Exception as e:
+                generator.delete_dataset()
+                raise e
 
+        self.datasetpath = generator.datasetfile_path
         if not os.path.exists(self.datasetpath):
             mse = f"dataset fileが見つかりません。path: {self.datasetpath} cwd: {os.getcwd()}"
             raise FileExistsError(mse)
+
         self.dataset_list: list = list(map(
             lambda l: l.strip().split(","), open(self.datasetpath).readlines()))
         self.__len = len(self.dataset_list)
