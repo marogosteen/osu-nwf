@@ -49,8 +49,8 @@ class WindTrainController:
             feature: torch.Tensor
             truth: torch.Tensor
             for feature, truth in train_dataloader:
-                feature.to(self.__device)
-                truth.to(self.__device)
+                feature = feature.to(self.__device)
+                truth = truth.to(self.__device)
                 pred = self.__net(feature)
                 loss = self.__loss_func(pred, truth)
                 sumloss += float(loss)

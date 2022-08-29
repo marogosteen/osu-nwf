@@ -40,11 +40,13 @@ class WindDirectionTrainController:
             feature: torch.Tensor
             truth: torch.Tensor
             for feature, truth in train_dataloader:
-                truth = truth.to(torch.long)
-                feature.to(self.__device)
-                truth.to(self.__device)
+                feature = feature.to(self.__device)
+                truth = truth.to(self.__device).to(torch.long)
                 pred = self.__net(feature)
-                loss = self.__loss_func(pred, truth)
+                loss = self.__loss_func(pred[:, 0:17], truth[:, 0])
+                loss += self.__loss_func(pred[:, 17:34], truth[:, 1])
+                loss += self.__loss_func(pred[:, 34:51], truth[:, 2])
+                loss /= 3.
                 sumloss += float(loss)
                 self.__optimizer.zero_grad()
                 loss.backward()
