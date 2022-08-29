@@ -4,14 +4,14 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import models
 
-from ml.datasets import wind_velocity_dataset
+from ml.datasets import wind_direction_dataset
 from ml.controllers.wind_controller import WindTrainController
 from services.application import report
 
 
 forecast_timedelta = 1
 learning_rate = 0.0005
-reportname = f"windvelocity_{forecast_timedelta}hourlater"
+reportname = f"winddirection_{forecast_timedelta}hourlater"
 
 if __name__ == "__main__":
     for year in [2016, 2017, 2018, 2019]:
@@ -21,9 +21,8 @@ if __name__ == "__main__":
             reportname=reportname, target_year=year)
         datasetname = reportname+str(year)
 
-        # IterableDatasetをDatasetにしたい
-        train_dataset = wind_velocity_dataset.WindNWFDataset(
-            generator=wind_velocity_dataset.DatasetGenerator(
+        train_dataset = wind_direction_dataset.WindNWFDataset(
+            generator=wind_direction_dataset.DatasetGenerator(
                 begin_year=2016,
                 end_year=2020,
                 target_year=year,
@@ -34,7 +33,7 @@ if __name__ == "__main__":
             num_classes=train_dataset.truth_size)
         optimizer = torch.optim.Adam(
             net.parameters(), lr=learning_rate)
-        loss_func = torch.nn.MSELoss()
+        loss_func = torch.nn.CrossEntropyLoss()
         controller = WindTrainController(
             train_dataset=train_dataset,
             net=net,
@@ -55,8 +54,8 @@ if __name__ == "__main__":
         else:
             net.load_state_dict(torch.load(state_dict_path))
 
-        eval_dataset = wind_velocity_dataset.WindNWFDataset(
-            generator=wind_velocity_dataset.DatasetGenerator(
+        eval_dataset = wind_direction_dataset.WindNWFDataset(
+            generator=wind_direction_dataset.DatasetGenerator(
                 begin_year=year,
                 end_year=year+1,
                 forecast_timedelta=forecast_timedelta,
@@ -65,7 +64,7 @@ if __name__ == "__main__":
         eval_dataloader = DataLoader(
             eval_dataset, batch_size=controller.batch_size)
 
-        # このevalのメソッド作りたい
+        # このメソッド作りたい
         truths = []
         predicts = []
         net.eval()

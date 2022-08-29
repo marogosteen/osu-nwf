@@ -1,4 +1,5 @@
 import datetime
+import math
 import os
 import typing
 
@@ -11,72 +12,96 @@ from infrastructure import pressure_images, weather_db, dataset_store
 
 
 class DatasetGenerator:
-    dataset_dir = dataset_store.DATASET_STORE_DIR
+    dataset_dir = os.path.join(dataset_store.DATASET_STORE_DIR, "direction")
     filepattern = "%Y%m%d%H%M"
     recordpattern = "%Y-%m-%d %H:%M"
     select_records = [
-        "ukb.velocity",
-        "kix.velocity",
-        "tomogashima.velocity"
+        "ukb.sin_direction",
+        "ukb.cos_direction",
+        "kix.sin_direction",
+        "kix.cos_direction",
+        "tomogashima.sin_direction",
+        "tomogashima.cos_direction"
     ]
 
     def __init__(
         self,
         datasetname: str,
         begin_year: int,
-        end_year: int,
+        end_yaer: int,
         target_year: int | None = None,
         forecast_timedelta: int = 1
     ) -> None:
 
         self.dataset_name = f"{datasetname}.csv"
-        self.__end_year = end_year
+        self.datasetfile_path = os.path.join(
+            self.dataset_dir, self.dataset_name)
         self.__target_year = target_year
-        self.__timestep = datetime.timedelta(hours=1)
+        self.__end_year = end_yaer
+        self.__timedelta_1hour = datetime.timedelta(hours=1)
         self.__forecast_timedelta = datetime.timedelta(
             hours=forecast_timedelta)
         self.__currenttime = datetime.datetime(
             year=begin_year, month=1, day=1, hour=0, minute=0)
         self.__dbconnect = weather_db.DbContext()
 
+    def is_generated(self) -> bool:
+        return os.path.exists(self.datasetfile_path)
+
     def generate(self) -> None:
         if not os.path.exists(self.dataset_dir):
-            os.mkdir(self.dataset_dir)
-
-        datasetfile_path = os.path.join(self.dataset_dir, self.dataset_name)
-        if os.path.exists(datasetfile_path):
-            return
+            os.makedirs(self.dataset_dir)
 
         print(f"generating dataset({self.dataset_name})...")
-        datasetfile = open(datasetfile_path, mode="w")
+        datasetfile = open(self.datasetfile_path, mode="w")
+        query = self.__query()
+        self.__dbconnect.cursor.execute(query)
         while True:
-            forecast_time = self.__currenttime + self.__forecast_timedelta
+            try:
+                record = next(records)
+            except StopIteration:
+                records = iter(self.__dbconnect.cursor.fetchmany(1000))
+                if not records:
+                    break
+                record = next(records)
 
+            forecast_time = self.__forecast_datetime()
+            # evaldatasetの場合、時間ベースで停止すれば全てFetchする必要がなくなる。
             if forecast_time.year == self.__end_year:
-                datasetfile.close()
-                print(f"generate complete! ({self.dataset_name})")
-                return
-
+                break
             # eval dataを学習に使用しない。
             if forecast_time.year == self.__target_year:
                 self.__currenttime = datetime.datetime(
                     year=self.__currenttime.year+1, month=1, day=1, hour=0, minute=0)
+                forecast_time = self.__forecast_datetime()
                 continue
+
+            # 観測データが抜けて予測時差が一致しないととデータセットとして破綻する。
+            while datetime.datetime.strptime(record[0], self.recordpattern) != forecast_time:
+                print(f"気象データの欠損があります。 \ndatetime: {forecast_time}")
+                forecast_time += self.__timedelta_1hour
 
             imagepath = self.__generate_imagepath(self.__currenttime)
             if not os.path.exists(imagepath):
                 raise FileExistsError(f"学習用画像ファイルがありません。 path:{imagepath}")
 
-            wind_query = self.__wind_query(forecast_time)
-            self.__dbconnect.cursor.execute(wind_query)
-            wind_record = self.__dbconnect.cursor.fetchone()
-            self.__currenttime += self.__timestep
-            if None in wind_record:
+            self.__currenttime += self.__timedelta_1hour
+            if None in record:
                 continue
 
-            wind_record = ",".join(map(str, wind_record))
+            direction_class = ",".join(map(str, [
+                self.__conv_directionclass(record[0], record[1]),
+                self.__conv_directionclass(record[2], record[3]),
+                self.__conv_directionclass(record[4], record[5])
+            ]))
             datasetfile.write(
-                f"{forecast_time.strftime(self.recordpattern)},{imagepath},{wind_record}\n")
+                f"{forecast_time.strftime(self.recordpattern)},{imagepath},{direction_class}\n")
+
+        datasetfile.close()
+        print(f"generate complete! ({self.dataset_name})")
+
+    def __forecast_datetime(self) -> datetime.datetime:
+        return self.__currenttime + self.__forecast_timedelta
 
     def __generate_imagepath(self, fetchtime: datetime.datetime) -> str:
         return os.path.join(
@@ -86,19 +111,46 @@ class DatasetGenerator:
             fetchtime.strftime(self.filepattern)+".jpg"
         )
 
-    def __wind_query(self, forecasttime: datetime.datetime) -> str:
+    # TODO magic number
+    def __conv_directionclass(self, sinv: float, cosv: float) -> int:
+        if sinv == 0 and cosv == 0:
+            return 0
+
+        asv = math.asin(sinv)
+        acv = math.acos(cosv)
+        sd = asv / (2 * math.pi) * 360
+        cd = acv / (2 * math.pi) * 360
+        r = cd if sd >= 0 else 360 - cd
+        r = round(r, 1)
+        if r % (360 / 16) != 0:
+            raise ValueError("")
+        c = int(r // (360 / 16) + 1 - 8)
+        if c <= 0:
+            c += 16
+
+        return c
+
+    def __query(self) -> str:
         return f"""
-select
-    {",".join(self.select_records)}
-from 
-    wind as ukb
-    inner join wind as kix on ukb.datetime == kix.datetime
-    inner join wind as tomogashima on ukb.datetime == tomogashima.datetime
-where
-    ukb.place == "ukb" and
-    kix.place == "kix" and
-    tomogashima.place == "tomogashima" and
-    ukb.datetime == '{forecasttime.strftime(self.recordpattern)}';
+SELECT
+    ukb.datetime,
+    ukb.sin_direction,
+    ukb.cos_direction,
+    kix.sin_direction,
+    kix.cos_direction,
+    tomogashima.sin_direction,
+    tomogashima.cos_direction
+FROM
+    wind AS ukb
+    INNER JOIN wind AS kix ON ukb.datetime == kix.datetime
+    INNER JOIN wind AS tomogashima ON ukb.datetime == tomogashima.datetime
+WHERE
+    ukb.place == "ukb" AND
+    kix.place == "kix" AND
+    tomogashima.place == "tomogashima"
+ORDER BY
+    ukb.datetime
+;
 """
 
 
