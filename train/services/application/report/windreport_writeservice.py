@@ -18,7 +18,6 @@ class WindReportWriteService:
     lossimagefilename: str = "loss_history.jpg"
 
     def __init__(self, reportname: str, target_year: int) -> None:
-        reportname = os.path.join(reportname, str(target_year))
         self.report_dir = os.path.join(self.report_dir, reportname)
         if not os.path.exists(self.report_dir):
             os.makedirs(self.report_dir)

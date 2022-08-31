@@ -12,7 +12,6 @@ from infrastructure import pressure_images, weather_db, dataset_store
 
 
 class DatasetGenerator:
-    dataset_dir = os.path.join(dataset_store.DATASET_STORE_DIR, "direction")
     filenamepattern = "%Y%m%d%H%M"
     recordpattern = "%Y-%m-%d %H:%M"
     select_records = [
@@ -27,67 +26,71 @@ class DatasetGenerator:
     def __init__(
         self,
         datasetname: str,
-        begin_year: int,
-        end_year: int,
-        target_year: int | None = None,
-        forecast_timedelta: int = 1
     ) -> None:
-
         self.datasetfile_path = os.path.join(
-            self.dataset_dir, f"{datasetname}.csv")
-        self.__target_year = target_year
-        self.__end_year = end_year
-        self.__timedelta_1hour = datetime.timedelta(hours=1)
-        self.__forecast_timedelta = datetime.timedelta(
-            hours=forecast_timedelta)
-        self.__currenttime = datetime.datetime(
-            year=begin_year, month=1, day=1, hour=0, minute=0)
+            dataset_store.DATASET_STORE_DIR, f"{datasetname}.csv")
+        self.dataset_dir = os.path.dirname(self.datasetfile_path)
+        if not os.path.exists(self.dataset_dir):
+            os.makedirs(self.dataset_dir)
         self.__dbconnect = weather_db.DbContext()
-        self.__init_record_buf()
 
     def delete_dataset(self):
         if self.is_generated():
             self.datasetfile.close()
             os.remove(self.datasetfile_path)
 
-    def generate(self) -> None:
-        if not os.path.exists(self.dataset_dir):
-            os.makedirs(self.dataset_dir)
+    def generate(
+        self,
+        begin_year: int,
+        end_year: int,
+        target_year: int | None = None,
+        forecast_timedelta: int = 1
+    ) -> None:
+        if not self.is_generated():
+            try:
+                self.__generate(
+                    begin_year=begin_year,
+                    end_year=end_year,
+                    target_year=target_year,
+                    forecast_timedelta=forecast_timedelta,
+                )
+            except Exception as e:
+                self.delete_dataset()
+                raise e
+
+    def __generate(
+        self,
+        begin_year: int,
+        end_year: int,
+        target_year: int | None = None,
+        forecast_timedelta: int = 1
+    ) -> None:
+        self.__init_record_buf(begin_year)
+        forecast_timedelta: datetime.timedelta = datetime.timedelta(
+            hours=forecast_timedelta)
 
         print(f"generating dataset({self.datasetfile_path})...")
         self.datasetfile = open(self.datasetfile_path, mode="w")
         while True:
             record = self.next_buf()
+
+            # 終了条件
             if record is None:
                 break
             record_datetime = datetime.datetime.strptime(
                 record[0], self.recordpattern)
-
-            if record_datetime.year == self.__target_year:
-                continue
-
-            forecast_time = self.__forecast_datetime()
             # evaldatasetの場合、時間ベースで停止すれば全てFetchする必要がなくなる。
-            if forecast_time.year == self.__end_year:
+            if record_datetime.year == end_year:
                 break
-            # eval dataを学習に使用しない。
-            if forecast_time.year == self.__target_year:
-                self.__currenttime = datetime.datetime(
-                    year=self.__currenttime.year+1, month=1, day=1, hour=0, minute=0)
-                forecast_time = self.__forecast_datetime()
+
+            # continue条件
+            feature_datetime = record_datetime - forecast_timedelta
+            if record_datetime.year == target_year or feature_datetime.year == target_year:
                 continue
-
-            # 観測データが抜けて予測時差が一致しないととデータセットとして破綻する。
-            while record_datetime != forecast_time:
-                print(f"気象データの欠損があります。 \ndatetime: {forecast_time}")
-                self.__currenttime += self.__timedelta_1hour
-
-            imagepath = self.__generate_imagepath(self.__currenttime)
-            if not os.path.exists(imagepath):
-                raise FileExistsError(f"学習用画像ファイルがありません。 path:{imagepath}")
-
-            self.__currenttime += self.__timedelta_1hour
             if None in record:
+                continue
+            imagepath = self.__generate_imagepath(feature_datetime)
+            if not os.path.exists(imagepath):
                 continue
 
             direction_class = ",".join(map(str, [
@@ -96,7 +99,7 @@ class DatasetGenerator:
                 self.__conv_directionclass(record[5], record[6])
             ]))
             self.datasetfile.write(
-                f"{forecast_time.strftime(self.recordpattern)},{imagepath},{direction_class}\n")
+                f"{record_datetime.strftime(self.recordpattern)},{imagepath},{direction_class}\n")
 
         self.datasetfile.close()
         print(f"generate complete! ({self.datasetfile_path})")
@@ -104,26 +107,24 @@ class DatasetGenerator:
     def is_generated(self) -> bool:
         return os.path.exists(self.datasetfile_path)
 
-    def __init_record_buf(self):
+    def __init_record_buf(self, begin_year: int):
         query = self.__query()
         self.__dbconnect.cursor.execute(query)
-        self.records_buf = []
-        first_forecastdatetime = self.__forecast_datetime().strftime(self.recordpattern)
-        self.records_buf: list = self.__dbconnect.cursor.fetchmany(1000)
-        record = self.next_buf()
-        while record[0] != first_forecastdatetime:
+        self.record_buf = []
+        while True:
             record = self.next_buf()
-        self.records_buf.insert(0, record)
+            record_datetime = datetime.datetime.strptime(
+                record[0], self.recordpattern)
+            if record_datetime.year == begin_year:
+                self.record_buf.insert(0, record)
+                break
 
     def next_buf(self) -> list:
-        if len(self.records_buf) == 0:
-            self.records_buf: list = self.__dbconnect.cursor.fetchmany(1000)
-            if len(self.records_buf) == 0:
+        if len(self.record_buf) == 0:
+            self.record_buf: list = self.__dbconnect.cursor.fetchmany(1000)
+            if len(self.record_buf) == 0:
                 return None
-        return self.records_buf.pop(0)
-
-    def __forecast_datetime(self) -> datetime.datetime:
-        return self.__currenttime + self.__forecast_timedelta
+        return self.record_buf.pop(0)
 
     def __generate_imagepath(self, fetchtime: datetime.datetime) -> str:
         return os.path.join(
@@ -181,16 +182,10 @@ class WindNWFDataset(Dataset):
 
     def __init__(
         self,
-        generator: DatasetGenerator
+        datasetfile_path: str
     ) -> None:
-        if not generator.is_generated():
-            try:
-                generator.generate()
-            except Exception as e:
-                generator.delete_dataset()
-                raise e
 
-        self.datasetpath = generator.datasetfile_path
+        self.datasetpath = datasetfile_path
         if not os.path.exists(self.datasetpath):
             mse = f"dataset fileが見つかりません。path: {self.datasetpath} cwd: {os.getcwd()}"
             raise FileExistsError(mse)

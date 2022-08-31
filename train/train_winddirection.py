@@ -12,97 +12,100 @@ from services.application import report
 forecast_timedelta = 1
 learning_rate = 0.0005
 if __name__ == "__main__":
-    for year in [2016, 2017, 2018, 2019]:
-        datasetname = f"winddirection_{forecast_timedelta}hourlater{year}"
-        print(datasetname)
+    for forecast_timedelta in [1, 3, 6, 9, 12]:
+        for year in [2016, 2017, 2018, 2019]:
+            datasetname = f"winddirection/{forecast_timedelta}hourlater/{year}"
+            print(datasetname)
 
-        report_service = report.WindReportWriteService(
-            reportname=datasetname, target_year=year)
+            report_service = report.WindReportWriteService(
+                reportname=datasetname, target_year=year)
 
-        train_dataset = wind_direction_dataset.WindNWFDataset(
-            generator=wind_direction_dataset.DatasetGenerator(
+            generator = wind_direction_dataset.DatasetGenerator(
+                datasetname=datasetname+"train")
+            generator.generate(
                 begin_year=2016,
                 end_year=2020,
                 target_year=year,
                 forecast_timedelta=forecast_timedelta,
-                datasetname=datasetname+"train"
             )
-        )
+            train_dataset = wind_direction_dataset.WindNWFDataset(
+                generator.datasetfile_path)
 
-        net = models.DenseNet(num_classes=51)
-        optimizer = torch.optim.Adam(
-            net.parameters(), lr=learning_rate)
-        loss_func = torch.nn.CrossEntropyLoss()
-        controller = WindDirectionTrainController(
-            train_dataset=train_dataset,
-            net=net,
-            optimizer=optimizer,
-            loss_func=loss_func)
+            net = models.DenseNet(num_classes=51)
+            optimizer = torch.optim.Adam(
+                net.parameters(), lr=learning_rate)
+            loss_func = torch.nn.CrossEntropyLoss()
+            controller = WindDirectionTrainController(
+                train_dataset=train_dataset,
+                net=net,
+                optimizer=optimizer,
+                loss_func=loss_func)
 
-        state_dict_path = report_service.state_dict_path()
-        if not os.path.exists(state_dict_path):
-            net, loss_history, state_dict = controller.train_model()
+            state_dict_path = report_service.state_dict_path()
+            if not os.path.exists(state_dict_path):
+                net, loss_history, state_dict = controller.train_model()
 
-            report_service.state_dict(state_dict)
-            report_service.loss_history(loss_history)
-            best_trainloss = min(loss_history)
-            print("best epoch: ", loss_history.index(best_trainloss) + 1)
-            print("best train loss: ", round(best_trainloss, 5))
-            print("best train RMSE: ", round(best_trainloss**0.5, 5))
+                report_service.state_dict(state_dict)
+                report_service.loss_history(loss_history)
+                best_trainloss = min(loss_history)
+                print("best epoch: ", loss_history.index(best_trainloss) + 1)
+                print("best train loss: ", round(best_trainloss, 5))
+                print("best train RMSE: ", round(best_trainloss**0.5, 5))
 
-        else:
-            net.load_state_dict(torch.load(state_dict_path))
+            else:
+                net.load_state_dict(torch.load(state_dict_path))
 
-        eval_dataset = wind_direction_dataset.WindNWFDataset(
-            generator=wind_direction_dataset.DatasetGenerator(
+            generator = wind_direction_dataset.DatasetGenerator(
+                datasetname=datasetname+"eval")
+            generator.generate(
                 begin_year=year,
                 end_year=year+1,
                 forecast_timedelta=forecast_timedelta,
-                datasetname=datasetname+"eval"
             )
-        )
-        eval_dataloader = DataLoader(
-            eval_dataset, batch_size=controller.batch_size)
+            eval_dataset = wind_direction_dataset.WindNWFDataset(
+                generator.datasetfile_path)
+            eval_dataloader = DataLoader(
+                eval_dataset, batch_size=controller.batch_size)
 
-        # このメソッド作りたい
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        truths = []
-        predicts = []
-        net.eval()
-        truth: torch.Tensor
-        pred: torch.Tensor
-        eval_loss, ukb_correct, kix_correct, tomogashima_correct = 0, 0, 0, 0
-        for feature, truth in eval_dataloader:
-            feature = feature.to(device)
-            truth = truth.to(device).to(torch.long)
-            pred = net(feature)
-            loss = float(loss_func(pred[:, 0:17], truth[:, 0]))
-            loss += float(loss_func(pred[:, 17:34], truth[:, 1]))
-            loss += float(loss_func(pred[:, 34:51], truth[:, 2]))
-            evalloss = loss / 3
-            truths.extend(truth.tolist())
-            predicts.extend(pred.tolist())
+            # このメソッド作りたい
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            truths = []
+            predicts = []
+            net.eval()
+            truth: torch.Tensor
+            pred: torch.Tensor
+            eval_loss, ukb_correct, kix_correct, tomogashima_correct = 0, 0, 0, 0
+            for feature, truth in eval_dataloader:
+                feature = feature.to(device)
+                truth = truth.to(device).to(torch.long)
+                pred = net(feature)
+                loss = float(loss_func(pred[:, 0:17], truth[:, 0]))
+                loss += float(loss_func(pred[:, 17:34], truth[:, 1]))
+                loss += float(loss_func(pred[:, 34:51], truth[:, 2]))
+                evalloss = loss / 3
+                truths.extend(truth.tolist())
+                predicts.extend(pred.tolist())
 
-            ukb_correct += float((
-                pred[:, 0:17].argmax(1) == truth[:, 0]
-            ).type(torch.float).sum())
-            kix_correct += float((
-                pred[:, 17:34].argmax(1) == truth[:, 1]
-            ).type(torch.float).sum())
-            tomogashima_correct += float((
-                pred[:, 34:51].argmax(1) == truth[:, 2]
-            ).type(torch.float).sum())
+                ukb_correct += float((
+                    pred[:, 0:17].argmax(1) == truth[:, 0]
+                ).type(torch.float).sum())
+                kix_correct += float((
+                    pred[:, 17:34].argmax(1) == truth[:, 1]
+                ).type(torch.float).sum())
+                tomogashima_correct += float((
+                    pred[:, 34:51].argmax(1) == truth[:, 2]
+                ).type(torch.float).sum())
 
-        eval_loss /= len(eval_dataloader)
-        ukb_correct /= len(eval_dataset)
-        kix_correct /= len(eval_dataset)
-        tomogashima_correct /= len(eval_dataset)
-        print(f"ukb Accuracy: {(100*ukb_correct):>0.1f}%")
-        print(f"kix Accuracy: {(100*kix_correct):>0.1f}%")
-        print(f"tomogashima Accuracy: {(100*tomogashima_correct):>0.1f}%")
+            eval_loss /= len(eval_dataloader)
+            ukb_correct /= len(eval_dataset)
+            kix_correct /= len(eval_dataset)
+            tomogashima_correct /= len(eval_dataset)
+            print(f"ukb Accuracy: {(100*ukb_correct):>0.1f}%")
+            print(f"kix Accuracy: {(100*kix_correct):>0.1f}%")
+            print(f"tomogashima Accuracy: {(100*tomogashima_correct):>0.1f}%")
 
-        datetimes = eval_dataset.get_datasettimes()
-        report_service.save_truths(truths, datetimes)
-        report_service.save_preds(predicts, datetimes)
+            datetimes = eval_dataset.get_datasettimes()
+            report_service.save_truths(truths, datetimes)
+            report_service.save_preds(predicts, datetimes)
 
-        print("eval RMSE:", round(eval_loss**0.5, 5))
+            print("eval RMSE:", round(eval_loss**0.5, 5))
