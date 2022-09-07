@@ -4,7 +4,7 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 
-from ml.datasets import wind_velocity_dataset
+from ml.datasets import wind_velocity
 from torchvision import models
 
 
@@ -16,7 +16,7 @@ class WindTrainController:
 
     def __init__(
         self,
-        train_dataset: wind_velocity_dataset.WindNWFDataset,
+        train_dataset: wind_velocity.WindNWFDataset,
         net: models.DenseNet,
         optimizer: torch.optim.Adam,
         loss_func: torch.nn.MSELoss

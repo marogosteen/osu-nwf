@@ -4,18 +4,18 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 
-from ml.datasets import wind_velocity_dataset
+from ml.datasets import wind_velocity
 from torchvision import models
 
 
-class WindDirectionTrainController:
+class WindVelocityTrainController:
     epochs = 1000
     batch_size = 256
     earlystop_endure = 10
 
     def __init__(
         self,
-        train_dataset: wind_velocity_dataset.WindNWFDataset,
+        train_dataset: wind_velocity.WindNWFDataset,
         net: models.DenseNet,
         optimizer: torch.optim.Adam,
         loss_func: torch.nn.CrossEntropyLoss
@@ -42,9 +42,7 @@ class WindDirectionTrainController:
                 feature = feature.to(self.__device)
                 truth = truth.to(self.__device).to(torch.long)
                 pred = self.__net(feature)
-                loss = self.__loss_func(pred[:, 0:17], truth[:, 0])
-                loss += self.__loss_func(pred[:, 17:34], truth[:, 1])
-                loss += self.__loss_func(pred[:, 34:51], truth[:, 2])
+                loss = self.__loss_func(pred, truth)
                 sumloss += float(loss) / 3.
                 self.__optimizer.zero_grad()
                 loss.backward()

@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import models
 
-from ml.datasets import wind_velocity_dataset
+from ml.datasets import wind_velocity
 from ml.controllers.wind_controller import WindTrainController
 from services.application import report
 
@@ -22,8 +22,8 @@ if __name__ == "__main__":
         datasetname = reportname+str(year)
 
         # IterableDatasetをDatasetにしたい
-        train_dataset = wind_velocity_dataset.WindNWFDataset(
-            generator=wind_velocity_dataset.DatasetGenerator(
+        train_dataset = wind_velocity.WindNWFDataset(
+            generator=wind_velocity.DatasetGenerator(
                 begin_year=2016,
                 end_year=2020,
                 target_year=year,
@@ -55,8 +55,8 @@ if __name__ == "__main__":
         else:
             net.load_state_dict(torch.load(state_dict_path))
 
-        eval_dataset = wind_velocity_dataset.WindNWFDataset(
-            generator=wind_velocity_dataset.DatasetGenerator(
+        eval_dataset = wind_velocity.WindNWFDataset(
+            generator=wind_velocity.DatasetGenerator(
                 begin_year=year,
                 end_year=year+1,
                 forecast_timedelta=forecast_timedelta,

@@ -4,22 +4,23 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import models
 
-from ml.datasets import wind_direction
-from ml.controllers.winddirection import WindDirectionTrainController
+from ml.generators.wind_velocity import WindVelocityDatasetGenerator as DSGenerator
+from ml.dataset import NWFDataset
+from ml.controllers.wind
 from services.application import report
 
 
 learning_rate = 0.0005
 if __name__ == "__main__":
-    for forecast_timedelta in [1, 3, 6, 9, 12]:
-        for year in [2016, 2017, 2018, 2019]:
-            datasetname = f"winddirection/{forecast_timedelta}hourlater/{year}"
+    for forecast_timedelta in [1]:
+        for year in [2016]:
+            datasetname = f"hogevelocity/{forecast_timedelta}hourlater/{year}"
             print(datasetname)
 
             report_service = report.WindReportWriteService(
                 reportname=datasetname, target_year=year)
 
-            generator = wind_direction.DatasetGenerator(
+            generator = DSGenerator(
                 datasetname=datasetname+"train")
             generator.generate(
                 begin_year=2016,
@@ -27,13 +28,13 @@ if __name__ == "__main__":
                 target_year=year,
                 forecast_timedelta=forecast_timedelta,
             )
-            train_dataset = wind_direction.NWFDataset(
+            train_dataset = NWFDataset(
                 generator.datasetfile_path)
 
-            net = models.DenseNet(num_classes=51)
+            net = models.DenseNet(num_classes=3)
             optimizer = torch.optim.Adam(
                 net.parameters(), lr=learning_rate)
-            loss_func = torch.nn.CrossEntropyLoss()
+            loss_func = torch.nn.MSELoss()
             controller = WindDirectionTrainController(
                 train_dataset=train_dataset,
                 net=net,
@@ -54,14 +55,14 @@ if __name__ == "__main__":
             else:
                 net.load_state_dict(torch.load(state_dict_path))
 
-            generator = wind_direction.DatasetGenerator(
+            generator = DSGenerator(
                 datasetname=datasetname+"eval")
             generator.generate(
                 begin_year=year,
                 end_year=year+1,
                 forecast_timedelta=forecast_timedelta,
             )
-            eval_dataset = wind_direction.NWFDataset(
+            eval_dataset = NWFDataset(
                 generator.datasetfile_path)
             eval_dataloader = DataLoader(
                 eval_dataset, batch_size=controller.batch_size)
@@ -78,31 +79,12 @@ if __name__ == "__main__":
                 feature = feature.to(device)
                 truth = truth.to(device).to(torch.long)
                 pred = net(feature)
-                loss = float(loss_func(pred[:, 0:17], truth[:, 0]))
-                loss += float(loss_func(pred[:, 17:34], truth[:, 1]))
-                loss += float(loss_func(pred[:, 34:51], truth[:, 2]))
+                loss = float(loss_func(pred, truth))
                 eval_loss += loss
                 truths.extend(truth.tolist())
                 predicts.extend(pred.tolist())
 
-                ukb_correct += float((
-                    pred[:, 0:17].argmax(1) == truth[:, 0]
-                ).type(torch.float).sum())
-                kix_correct += float((
-                    pred[:, 17:34].argmax(1) == truth[:, 1]
-                ).type(torch.float).sum())
-                tomogashima_correct += float((
-                    pred[:, 34:51].argmax(1) == truth[:, 2]
-                ).type(torch.float).sum())
-
             eval_loss /= len(eval_dataloader)
-            ukb_correct /= len(eval_dataset)
-            kix_correct /= len(eval_dataset)
-            tomogashima_correct /= len(eval_dataset)
-            print(f"ukb Accuracy: {(100*ukb_correct):>0.1f}%")
-            print(f"kix Accuracy: {(100*kix_correct):>0.1f}%")
-            print(f"tomogashima Accuracy: {(100*tomogashima_correct):>0.1f}%")
-
             datetimes = eval_dataset.get_datasettimes()
             report_service.save_truths(truths, datetimes)
             report_service.save_preds(predicts, datetimes)

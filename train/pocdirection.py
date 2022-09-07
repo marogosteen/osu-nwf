@@ -4,22 +4,23 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import models
 
-from ml.datasets import wind_direction
+from ml.generators.wind_direction import WindDirectionDatasetGenerator as DSGenerator
+from ml.dataset import NWFDataset
 from ml.controllers.winddirection import WindDirectionTrainController
 from services.application import report
 
 
 learning_rate = 0.0005
 if __name__ == "__main__":
-    for forecast_timedelta in [1, 3, 6, 9, 12]:
-        for year in [2016, 2017, 2018, 2019]:
-            datasetname = f"winddirection/{forecast_timedelta}hourlater/{year}"
+    for forecast_timedelta in [1]:
+        for year in [2016]:
+            datasetname = f"pocdirection/{forecast_timedelta}hourlater/{year}"
             print(datasetname)
 
             report_service = report.WindReportWriteService(
                 reportname=datasetname, target_year=year)
 
-            generator = wind_direction.DatasetGenerator(
+            generator = DSGenerator(
                 datasetname=datasetname+"train")
             generator.generate(
                 begin_year=2016,
@@ -27,7 +28,7 @@ if __name__ == "__main__":
                 target_year=year,
                 forecast_timedelta=forecast_timedelta,
             )
-            train_dataset = wind_direction.NWFDataset(
+            train_dataset = NWFDataset(
                 generator.datasetfile_path)
 
             net = models.DenseNet(num_classes=51)
@@ -54,14 +55,14 @@ if __name__ == "__main__":
             else:
                 net.load_state_dict(torch.load(state_dict_path))
 
-            generator = wind_direction.DatasetGenerator(
+            generator = DSGenerator(
                 datasetname=datasetname+"eval")
             generator.generate(
                 begin_year=year,
                 end_year=year+1,
                 forecast_timedelta=forecast_timedelta,
             )
-            eval_dataset = wind_direction.NWFDataset(
+            eval_dataset = NWFDataset(
                 generator.datasetfile_path)
             eval_dataloader = DataLoader(
                 eval_dataset, batch_size=controller.batch_size)
