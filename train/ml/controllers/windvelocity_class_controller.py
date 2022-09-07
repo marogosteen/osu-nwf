@@ -1,3 +1,4 @@
+from tkinter import E
 from typing import Tuple
 
 from tqdm import tqdm
@@ -8,7 +9,7 @@ from ml.datasets import wind_velocity_dataset
 from torchvision import models
 
 
-class WindDirectionTrainController:
+class WindVelocityClassTrainController:
     epochs = 1000
     batch_size = 256
     earlystop_endure = 10
@@ -42,9 +43,9 @@ class WindDirectionTrainController:
                 feature = feature.to(self.__device)
                 truth = truth.to(self.__device).to(torch.long)
                 pred = self.__net(feature)
-                loss = self.__loss_func(pred[:, 0:17], truth[:, 0])
-                loss += self.__loss_func(pred[:, 17:34], truth[:, 1])
-                loss += self.__loss_func(pred[:, 34:51], truth[:, 2])
+                loss = self.__loss_func(pred[:, 0:20], truth[:, 0])
+                loss = self.__loss_func(pred[:, 20:40], truth[:, 0])
+                loss += self.__loss_func(pred[:, 40:60], truth[:, 2])
                 sumloss += float(loss) / 3.
                 self.__optimizer.zero_grad()
                 loss.backward()

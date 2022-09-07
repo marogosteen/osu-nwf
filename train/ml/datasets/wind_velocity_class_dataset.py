@@ -26,6 +26,15 @@ class DatasetGenerator:
             os.makedirs(self.dataset_dir)
         self.__dbconnect = weather_db.DbContext()
 
+    def __conv_directionclass(self, record: list) -> list:
+        for i, v in enumerate(record):
+            v = int(v) + 1
+            v = 2 if v < 2 else v
+            v = 21 if v > 20 else v
+            v -= 2
+            record[i] = v
+        return record
+
     def delete_dataset(self):
         if self.is_generated():
             self.datasetfile.close()
@@ -85,11 +94,9 @@ class DatasetGenerator:
             if not os.path.exists(imagepath):
                 continue
 
-            direction_class = ",".join(map(str, [
-                self.__conv_directionclass(record[1], record[2]),
-                self.__conv_directionclass(record[3], record[4]),
-                self.__conv_directionclass(record[5], record[6])
-            ]))
+            record = list(record[1:])
+            record = self.__conv_directionclass(record)
+            direction_class = ",".join(map(str, record))
             self.datasetfile.write(
                 f"{record_datetime.strftime(self.recordpattern)},{imagepath},{direction_class}\n")
 
@@ -126,35 +133,13 @@ class DatasetGenerator:
             fetchtime.strftime(self.filenamepattern)+".jpg"
         )
 
-    # TODO magic number
-    def __conv_directionclass(self, sinv: float, cosv: float) -> int:
-        if sinv == 0 and cosv == 0:
-            return 0
-
-        asv = math.asin(sinv)
-        acv = math.acos(cosv)
-        sd = asv / (2 * math.pi) * 360
-        cd = acv / (2 * math.pi) * 360
-        r = cd if sd >= 0 else 360 - cd
-        r = round(r, 1)
-        if r % (360 / 16) != 0:
-            raise ValueError("")
-        c = int(r // (360 / 16) + 1 - 8)
-        if c <= 0:
-            c += 16
-
-        return c
-
     def __query(self) -> str:
         return f"""
 SELECT
     ukb.datetime,
-    ukb.sin_direction,
-    ukb.cos_direction,
-    kix.sin_direction,
-    kix.cos_direction,
-    tomogashima.sin_direction,
-    tomogashima.cos_direction
+    ukb.velocity,
+    kix.velocity,
+    tomogashima.velocity
 FROM
     wind AS ukb
     INNER JOIN wind AS kix ON ukb.datetime == kix.datetime

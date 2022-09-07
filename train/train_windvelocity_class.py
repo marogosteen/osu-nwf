@@ -4,22 +4,22 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import models
 
-from ml.datasets import wind_direction_dataset
-from ml.controllers.winddirection_controller import WindDirectionTrainController
+from ml.datasets import wind_velocity_class_dataset
+from ml.controllers.windvelocity_class_controller import WindVelocityClassTrainController
 from services.application import report
 
 
-learning_rate = 0.0005
+learning_rate = 0.001
 if __name__ == "__main__":
     for forecast_timedelta in [1, 3, 6, 9, 12]:
         for year in [2016, 2017, 2018, 2019]:
-            datasetname = f"winddirection/{forecast_timedelta}hourlater/{year}"
+            datasetname = f"windvelocity_class/{forecast_timedelta}hourlater/{year}"
             print(datasetname)
 
             report_service = report.WindReportWriteService(
                 reportname=datasetname, target_year=year)
 
-            generator = wind_direction_dataset.DatasetGenerator(
+            generator = wind_velocity_class_dataset.DatasetGenerator(
                 datasetname=datasetname+"train")
             generator.generate(
                 begin_year=2016,
@@ -27,14 +27,14 @@ if __name__ == "__main__":
                 target_year=year,
                 forecast_timedelta=forecast_timedelta,
             )
-            train_dataset = wind_direction_dataset.WindNWFDataset(
+            train_dataset = wind_velocity_class_dataset.WindNWFDataset(
                 generator.datasetfile_path)
 
-            net = models.DenseNet(num_classes=51)
+            net = models.DenseNet(num_classes=60)
             optimizer = torch.optim.Adam(
                 net.parameters(), lr=learning_rate)
             loss_func = torch.nn.CrossEntropyLoss()
-            controller = WindDirectionTrainController(
+            controller = WindVelocityClassTrainController(
                 train_dataset=train_dataset,
                 net=net,
                 optimizer=optimizer,
@@ -54,14 +54,14 @@ if __name__ == "__main__":
             else:
                 net.load_state_dict(torch.load(state_dict_path))
 
-            generator = wind_direction_dataset.DatasetGenerator(
+            generator = wind_velocity_class_dataset.DatasetGenerator(
                 datasetname=datasetname+"eval")
             generator.generate(
                 begin_year=year,
                 end_year=year+1,
                 forecast_timedelta=forecast_timedelta,
             )
-            eval_dataset = wind_direction_dataset.WindNWFDataset(
+            eval_dataset = wind_velocity_class_dataset.WindNWFDataset(
                 generator.datasetfile_path)
             eval_dataloader = DataLoader(
                 eval_dataset, batch_size=controller.batch_size)
@@ -78,21 +78,24 @@ if __name__ == "__main__":
                 feature = feature.to(device)
                 truth = truth.to(device).to(torch.long)
                 pred = net(feature)
-                loss = float(loss_func(pred[:, 0:17], truth[:, 0]))
-                loss += float(loss_func(pred[:, 17:34], truth[:, 1]))
-                loss += float(loss_func(pred[:, 34:51], truth[:, 2]))
+                ukbpred = pred[:, 0:20]
+                kixpred = pred[:, 20:40]
+                tomogashimapred = pred[:, 40:60]
+                loss = float(loss_func(ukbpred, truth[:, 0]))
+                loss += float(loss_func(kixpred, truth[:, 1]))
+                loss += float(loss_func(tomogashimapred, truth[:, 2]))
                 eval_loss += loss
                 truths.extend(truth.tolist())
                 predicts.extend(pred.tolist())
 
                 ukb_correct += float((
-                    pred[:, 0:17].argmax(1) == truth[:, 0]
+                    ukbpred.argmax(1) == truth[:, 0]
                 ).type(torch.float).sum())
                 kix_correct += float((
-                    pred[:, 17:34].argmax(1) == truth[:, 1]
+                    kixpred.argmax(1) == truth[:, 1]
                 ).type(torch.float).sum())
                 tomogashima_correct += float((
-                    pred[:, 34:51].argmax(1) == truth[:, 2]
+                    tomogashimapred.argmax(1) == truth[:, 2]
                 ).type(torch.float).sum())
 
             eval_loss /= len(eval_dataloader)
