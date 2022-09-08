@@ -1,2 +1,0 @@
-from services.application.report.report_writeservice import ReportWriteService
-from services.application.report.windreport_writeservice import WindReportWriteService
