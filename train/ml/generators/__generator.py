@@ -1,7 +1,8 @@
 import datetime
 import os
+import sqlite3
 
-from infrastructure import pressure_images, weather_db, dataset_store
+import infrastructure
 
 
 class DatasetGenerator:
@@ -10,14 +11,14 @@ class DatasetGenerator:
 
     def __init__(self, datasetname: str) -> None:
         self.datasetfile_path = os.path.join(
-            dataset_store.DATASET_STORE_DIR,
+            infrastructure.DATASET_STORE_DIR,
             f"{datasetname}.csv"
         )
         self.dataset_dir = os.path.dirname(self.datasetfile_path)
 
         if not os.path.exists(self.dataset_dir):
             os.makedirs(self.dataset_dir)
-        self.__dbconnect = weather_db.DbContext()
+        self.__dbconnect = sqlite3.connect(infrastructure.DBPATH)
 
     def __delete_dataset(self):
         if self.__is_generated():
@@ -33,7 +34,8 @@ class DatasetGenerator:
     ) -> None:
 
         if not self.__is_generated():
-            # if an error occurs during generate, delete the incomplete dataset.
+            # if an error occurs during generate,
+            # delete the incomplete dataset.
             try:
                 self.__generate(
                     begin_year=begin_year,
@@ -72,7 +74,8 @@ class DatasetGenerator:
 
             # continue条件
             feature_datetime = record_datetime - forecast_timedelta
-            if record_datetime.year == target_year or feature_datetime.year == target_year:
+            if record_datetime.year == target_year or \
+                    feature_datetime.year == target_year:
                 continue
             if None in record:
                 continue
@@ -83,14 +86,19 @@ class DatasetGenerator:
             record = self.record_conv(record)
             direction_class = ",".join(map(str, record))
             self.datasetfile.write(
-                f"{record_datetime.strftime(self.recordpattern)},{imagepath},{direction_class}\n")
+                "{},{},{}\n".format(
+                    record_datetime.strftime(self.recordpattern),
+                    imagepath,
+                    direction_class
+                )
+            )
 
         self.datasetfile.close()
         print(f"generate complete! ({self.datasetfile_path})")
 
     def __get_imagepath(self, fetchtime: datetime.datetime) -> str:
         return os.path.join(
-            pressure_images.IMAGEDIR,
+            infrastructure.IMAGEDIR,
             str(fetchtime.year),
             str(fetchtime.month).zfill(2),
             fetchtime.strftime(self.filenamepattern)+".jpg"

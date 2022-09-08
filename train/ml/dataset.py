@@ -17,11 +17,15 @@ class NWFDataset(Dataset):
 
         self.datasetpath = datasetfile_path
         if not os.path.exists(self.datasetpath):
-            mse = f"dataset fileが見つかりません。path: {self.datasetpath} cwd: {os.getcwd()}"
+            mse = "dataset fileが見つかりません。path: {} cwd: {}".format(
+                self.datasetpath,
+                os.getcwd()
+            )
             raise FileExistsError(mse)
 
         self.dataset_list: list = list(map(
-            lambda l: l.strip().split(","), open(self.datasetpath).readlines()))
+            lambda l: l.strip().split(","),
+            open(self.datasetpath).readlines()))
         self.__len = len(self.dataset_list)
         self.__transforms = transforms.ToTensor()
         self.__truth_size = len(
@@ -34,7 +38,9 @@ class NWFDataset(Dataset):
     def __len__(self) -> int:
         return self.__len
 
-    def __getitem__(self, idx: int) -> typing.Tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(
+        self, idx: int
+    ) -> typing.Tuple[torch.Tensor, torch.Tensor]:
         line = self.dataset_list[idx]
         image = Image.open(line[1]).convert("RGB")
         image = self.__transforms(image)

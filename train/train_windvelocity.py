@@ -4,84 +4,91 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import models
 
-from ml.datasets import wind_velocity
-from ml.controllers.wind_controller import WindTrainController
-from services.application import report
+from ml.generators.wind.velocity import WindVelocityDatasetGenerator
+from ml.losses.wind.velocity import WindVelocityLoss
+from ml.dataset import NWFDataset
+from ml.train_controller import TrainController
+from train.services.trainreport_writeservice import TrainReportWriteService
 
 
-forecast_timedelta = 1
 learning_rate = 0.0005
-reportname = f"windvelocity_{forecast_timedelta}hourlater"
-
 if __name__ == "__main__":
-    for year in [2016, 2017, 2018, 2019]:
-        print(reportname, year)
+    for forecast_timedelta in [1, 3, 6, 9, 12]:
+        for year in [2016, 2017, 2018, 2019]:
+            datasetname = "windvelocity_class/{}hourlater/{}".format(
+                forecast_timedelta,
+                year
+            )
+            print(datasetname)
 
-        report_service = report.WindReportWriteService(
-            reportname=reportname, target_year=year)
-        datasetname = reportname+str(year)
+            report_service = TrainReportWriteService(
+                reportname=datasetname, target_year=year)
 
-        # IterableDatasetをDatasetにしたい
-        train_dataset = wind_velocity.WindNWFDataset(
-            generator=wind_velocity.DatasetGenerator(
+            generator = WindVelocityDatasetGenerator(
+                datasetname=datasetname+"train")
+            generator.generate(
                 begin_year=2016,
                 end_year=2020,
                 target_year=year,
-                forecast_timedelta=forecast_timedelta,
-                datasetname=datasetname+"train"),
-            datasetname=datasetname+"train")
-        net = models.DenseNet(
-            num_classes=train_dataset.truth_size)
-        optimizer = torch.optim.Adam(
-            net.parameters(), lr=learning_rate)
-        loss_func = torch.nn.MSELoss()
-        controller = WindTrainController(
-            train_dataset=train_dataset,
-            net=net,
-            optimizer=optimizer,
-            loss_func=loss_func)
+                forecast_timedelta=forecast_timedelta)
+            train_dataset = NWFDataset(
+                generator.datasetfile_path)
 
-        state_dict_path = report_service.state_dict_path()
-        if not os.path.exists(state_dict_path):
-            net, loss_history, state_dict = controller.train_model()
+            net = models.DenseNet(num_classes=3)
+            optimizer = torch.optim.Adam(
+                net.parameters(), lr=learning_rate)
+            loss_func = WindVelocityLoss()
+            controller = TrainController(
+                train_dataset=train_dataset,
+                net=net,
+                optimizer=optimizer,
+                loss_func=loss_func)
 
-            report_service.state_dict(state_dict)
-            report_service.loss_history(loss_history)
-            best_trainloss = min(loss_history)
-            print("best epoch: ", loss_history.index(best_trainloss) + 1)
-            print("best train loss: ", round(best_trainloss, 5))
-            print("best train RMSE: ", round(best_trainloss**0.5, 5))
+            state_dict_path = report_service.state_dict_path()
+            if not os.path.exists(state_dict_path):
+                net, loss_history, state_dict = controller.train_model()
 
-        else:
-            net.load_state_dict(torch.load(state_dict_path))
+                report_service.state_dict(state_dict)
+                report_service.loss_history(loss_history)
+                best_trainloss = min(loss_history)
+                print("best epoch: ", loss_history.index(best_trainloss) + 1)
+                print("best train loss: ", round(best_trainloss, 5))
+                print("best train RMSE: ", round(best_trainloss**0.5, 5))
 
-        eval_dataset = wind_velocity.WindNWFDataset(
-            generator=wind_velocity.DatasetGenerator(
-                begin_year=year,
-                end_year=year+1,
-                forecast_timedelta=forecast_timedelta,
-                datasetname=datasetname+"eval"),
-            datasetname=datasetname+"eval")
-        eval_dataloader = DataLoader(
-            eval_dataset, batch_size=controller.batch_size)
+            else:
+                net.load_state_dict(torch.load(state_dict_path))
 
-        # このevalのメソッド作りたい
-        truths = []
-        predicts = []
-        net.eval()
-        truth: torch.Tensor
-        pred: torch.Tensor
-        eval_loss = 0
-        for feature, truth in eval_dataloader:
-            pred = net(feature)
-            eval_loss += float(loss_func(truth, pred))
-            truths.extend(truth.tolist())
-            predicts.extend(pred.tolist())
-        eval_loss /= len(eval_dataloader)
+                generator = WindVelocityDatasetGenerator(
+                    datasetname=datasetname+"eval")
+                generator.generate(
+                    begin_year=year,
+                    end_year=year+1,
+                    forecast_timedelta=forecast_timedelta)
+                eval_dataset = NWFDataset(
+                    generator.datasetfile_path)
+                eval_dataloader = DataLoader(
+                    eval_dataset, batch_size=controller.batch_size)
 
-        datetimes = eval_dataset.get_datasettimes()
-        report_service.save_truths(truths, datetimes)
-        report_service.save_preds(predicts, datetimes)
+            # このメソッド作りたい
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            truths = []
+            predicts = []
+            net.eval()
+            truth: torch.Tensor
+            pred: torch.Tensor
+            eval_loss = 0
+            for feature, truth in eval_dataloader:
+                feature = feature.to(device)
+                truth = truth.to(device).to(torch.long)
+                pred = net(feature)
+                loss = float(loss_func(pred, truth))
+                eval_loss += loss
+                truths.extend(truth.tolist())
+                predicts.extend(pred.tolist())
+            eval_loss /= len(eval_dataloader)
 
-        print("eval RMSE:", round(eval_loss**0.5, 5))
-        print("done")
+            datetimes = eval_dataset.get_datasettimes()
+            report_service.save_truths(truths, datetimes)
+            report_service.save_preds(predicts, datetimes)
+
+            print("eval RMSE:", round(eval_loss**0.5, 5))

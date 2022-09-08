@@ -1,1 +1,0 @@
-REPORT_DIR = "../report/"

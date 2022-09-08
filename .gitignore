@@ -1,9 +1,10 @@
+legacy_train/
 env/
-*.sqlite
-/admin/
-/report/
-/pressure_images/
-/dataset_store/
+admin/
+report/
+assets/
+
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

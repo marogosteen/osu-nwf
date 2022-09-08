@@ -4,32 +4,32 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 
-from ml.datasets import wind_velocity
+from ml.dataset import NWFDataset
 from torchvision import models
 
 
-class WaveVelocityTrainController:
+class TrainController:
     epochs = 1000
     batch_size = 256
     earlystop_endure = 10
 
     def __init__(
         self,
-        train_dataset: wind_velocity.WindNWFDataset,
+        train_dataset: NWFDataset,
         net: models.DenseNet,
         optimizer: torch.optim.Adam,
-        loss_func: torch.nn.CrossEntropyLoss
+        lossfunc: torch.nn.Module
     ):
         self.__device = "cuda" if torch.cuda.is_available() else "cpu"
         self.__train_dataset = train_dataset
         self.__net = net.to(self.__device)
         self.__optimizer = optimizer
-        self.__loss_func = loss_func
+        self.__lossfunc = lossfunc
 
     def train_model(self) -> Tuple[models.DenseNet, list, dict]:
         print("traning model...")
         train_dataloader = DataLoader(
-            self.__train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=4)
+            self.__train_dataset, batch_size=self.batch_size, shuffle=True)
         best_state_dict = None
         best_loss = None
         loss_history = []
@@ -40,10 +40,10 @@ class WaveVelocityTrainController:
             truth: torch.Tensor
             for feature, truth in train_dataloader:
                 feature = feature.to(self.__device)
-                truth = truth.to(self.__device)
+                truth = truth.to(self.__device).to(torch.int64)
                 pred = self.__net(feature)
-                loss = self.__loss_func(pred, truth)
-                sumloss += float(loss)
+                loss = self.__lossfunc(pred, truth)
+                sumloss += float(loss) / 3.
                 self.__optimizer.zero_grad()
                 loss.backward()
                 self.__optimizer.step()

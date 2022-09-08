@@ -4,37 +4,41 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import models
 
-from ml.datasets import wind_velocity_class_dataset
-from ml.controllers.windvelocity_class_controller import WindVelocityClassTrainController
-from services.application import report
+from ml.generators.wind.velocity_class import WindVelocityClassDatasetGenerator
+from ml.losses.wind.velocity_class import WindVelocityClassLoss
+from ml.dataset import NWFDataset
+from ml.train_controller import TrainController
+from train.services.trainreport_writeservice import TrainReportWriteService
 
 
 learning_rate = 0.001
 if __name__ == "__main__":
     for forecast_timedelta in [1, 3, 6, 9, 12]:
         for year in [2016, 2017, 2018, 2019]:
-            datasetname = f"windvelocity_class/{forecast_timedelta}hourlater/{year}"
+            datasetname = "windvelocity_class/{}hourlater/{}".format(
+                forecast_timedelta,
+                year
+            )
             print(datasetname)
 
-            report_service = report.WindReportWriteService(
+            report_service = TrainReportWriteService(
                 reportname=datasetname, target_year=year)
 
-            generator = wind_velocity_class_dataset.DatasetGenerator(
+            generator = WindVelocityClassDatasetGenerator(
                 datasetname=datasetname+"train")
             generator.generate(
                 begin_year=2016,
                 end_year=2020,
                 target_year=year,
-                forecast_timedelta=forecast_timedelta,
-            )
-            train_dataset = wind_velocity_class_dataset.WindNWFDataset(
+                forecast_timedelta=forecast_timedelta)
+            train_dataset = NWFDataset(
                 generator.datasetfile_path)
 
-            net = models.DenseNet(num_classes=60)
+            net = models.DenseNet(num_classes=3)
             optimizer = torch.optim.Adam(
                 net.parameters(), lr=learning_rate)
-            loss_func = torch.nn.CrossEntropyLoss()
-            controller = WindVelocityClassTrainController(
+            loss_func = WindVelocityClassLoss()
+            controller = TrainController(
                 train_dataset=train_dataset,
                 net=net,
                 optimizer=optimizer,
@@ -54,17 +58,16 @@ if __name__ == "__main__":
             else:
                 net.load_state_dict(torch.load(state_dict_path))
 
-            generator = wind_velocity_class_dataset.DatasetGenerator(
-                datasetname=datasetname+"eval")
-            generator.generate(
-                begin_year=year,
-                end_year=year+1,
-                forecast_timedelta=forecast_timedelta,
-            )
-            eval_dataset = wind_velocity_class_dataset.WindNWFDataset(
-                generator.datasetfile_path)
-            eval_dataloader = DataLoader(
-                eval_dataset, batch_size=controller.batch_size)
+                generator = WindVelocityClassDatasetGenerator(
+                    datasetname=datasetname+"eval")
+                generator.generate(
+                    begin_year=year,
+                    end_year=year+1,
+                    forecast_timedelta=forecast_timedelta)
+                eval_dataset = NWFDataset(
+                    generator.datasetfile_path)
+                eval_dataloader = DataLoader(
+                    eval_dataset, batch_size=controller.batch_size)
 
             # このメソッド作りたい
             device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -73,38 +76,33 @@ if __name__ == "__main__":
             net.eval()
             truth: torch.Tensor
             pred: torch.Tensor
-            eval_loss, ukb_correct, kix_correct, tomogashima_correct = 0, 0, 0, 0
+            eval_loss, u_correct, k_correct, t_correct = 0, 0, 0, 0
             for feature, truth in eval_dataloader:
                 feature = feature.to(device)
                 truth = truth.to(device).to(torch.long)
                 pred = net(feature)
-                ukbpred = pred[:, 0:20]
-                kixpred = pred[:, 20:40]
-                tomogashimapred = pred[:, 40:60]
-                loss = float(loss_func(ukbpred, truth[:, 0]))
-                loss += float(loss_func(kixpred, truth[:, 1]))
-                loss += float(loss_func(tomogashimapred, truth[:, 2]))
+                loss = float(loss_func(pred, truth))
                 eval_loss += loss
                 truths.extend(truth.tolist())
                 predicts.extend(pred.tolist())
 
-                ukb_correct += float((
-                    ukbpred.argmax(1) == truth[:, 0]
+                u_correct += float((
+                    pred[:, 0:20].argmax(1) == truth[:, 0]
                 ).type(torch.float).sum())
-                kix_correct += float((
-                    kixpred.argmax(1) == truth[:, 1]
+                k_correct += float((
+                    pred[:, 20:40].argmax(1) == truth[:, 1]
                 ).type(torch.float).sum())
-                tomogashima_correct += float((
-                    tomogashimapred.argmax(1) == truth[:, 2]
+                t_correct += float((
+                    pred[:, 40:60].argmax(1) == truth[:, 2]
                 ).type(torch.float).sum())
 
             eval_loss /= len(eval_dataloader)
-            ukb_correct /= len(eval_dataset)
-            kix_correct /= len(eval_dataset)
-            tomogashima_correct /= len(eval_dataset)
-            print(f"ukb Accuracy: {(100*ukb_correct):>0.1f}%")
-            print(f"kix Accuracy: {(100*kix_correct):>0.1f}%")
-            print(f"tomogashima Accuracy: {(100*tomogashima_correct):>0.1f}%")
+            u_correct /= len(eval_dataset)
+            k_correct /= len(eval_dataset)
+            t_correct /= len(eval_dataset)
+            print(f"ukb Accuracy: {(100*u_correct):>0.1f}%")
+            print(f"kix Accuracy: {(100*k_correct):>0.1f}%")
+            print(f"tomogashima Accuracy: {(100*t_correct):>0.1f}%")
 
             datetimes = eval_dataset.get_datasettimes()
             report_service.save_truths(truths, datetimes)

@@ -1,14 +1,12 @@
 from ml.generators.__generator import DatasetGenerator
 
 
-class WaveHeightClassDatasetGenerator(DatasetGenerator):
+class WaveHeightDatasetGenerator(DatasetGenerator):
     def __init__(self, datasetname: str) -> None:
         super().__init__(datasetname)
 
     def record_conv(self, record) -> list:
-        h = record[1]
-        h = h // 0.5
-        return
+        return record[1]
 
     def query(self) -> str:
         return """
@@ -21,5 +19,4 @@ WHERE
     place == "kobe"
 ORDER BY
     datetime
-;
 """
