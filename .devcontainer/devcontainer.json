@@ -23,7 +23,8 @@
 			"settings": { 
 				"python.defaultInterpreterPath": "/usr/local/bin/python",
 				"python.linting.enabled": true,
-				"python.linting.pylintEnabled": true,
+				"python.linting.pylintEnabled": false,
+				"python.linting.flake8Enabled": true,
 				"python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
 				"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
 				"python.formatting.yapfPath": "/usr/local/py-utils/bin/yapf",
@@ -38,7 +39,15 @@
 			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
 				"ms-python.python",
-				"ms-python.vscode-pylance"
+				"ms-python.vscode-pylance",
+				"qwtel.sqlite-viewer",
+				"eamodio.gitlens",
+				"oderwat.indent-rainbow",
+				"VisualStudioExptTeam.vscodeintellicode",
+				"VisualStudioExptTeam.intellicode-api-usage-examples",
+				"christian-kohler.path-intellisense",
+				"alexcvzz.vscode-sqlite",
+				"Gruntfuggly.todo-tree"
 			]
 		}
 	},
