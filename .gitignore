@@ -3,6 +3,8 @@ env/
 admin/
 report/
 assets/
+dataset_store/
+analytics/
 
 .DS_Store
 
