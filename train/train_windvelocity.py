@@ -8,7 +8,7 @@ from ml.generators.wind.velocity import WindVelocityDatasetGenerator
 from ml.losses.wind.velocity import WindVelocityLoss
 from ml.dataset import NWFDataset
 from ml.train_controller import TrainController
-from train.services.trainreport_writeservice import TrainReportWriteService
+from services.trainreport_writeservice import TrainReportWriteService
 
 
 learning_rate = 0.0005
@@ -42,7 +42,7 @@ if __name__ == "__main__":
                 train_dataset=train_dataset,
                 net=net,
                 optimizer=optimizer,
-                loss_func=loss_func)
+                lossfunc=loss_func)
 
             state_dict_path = report_service.state_dict_path()
             if not os.path.exists(state_dict_path):

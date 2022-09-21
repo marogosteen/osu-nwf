@@ -4,11 +4,11 @@ import os
 import torch
 import matplotlib.pyplot as plt
 
-from infrastructure import report_store
+import infrastructure
 
 
 class TrainReportWriteService:
-    report_dir: str = report_store.REPORT_DIR
+    report_dir: str = infrastructure.REPORT_DIR
     state_dict_name: str = "state_dict.pt"
     truthfilename: str = "truth.csv"
     predfilename: str = "pred.csv"

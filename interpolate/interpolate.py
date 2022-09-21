@@ -14,7 +14,7 @@ GRID_SIZE = 100
 MIN_PRESSURE = 955
 MAX_PRESSURE = 1060
 XX, YY = np.meshgrid(range(GRID_SIZE), range(GRID_SIZE))
-DBPATH = "../pressure_db.sqlite"
+DBPATH = "../assets/pressure_db.sqlite"
 START_TIME = datetime.datetime(year=2016, month=1, day=1, hour=0, minute=0)
 END_YEAR = 2020
 DBCONNECT = sqlite3.connect(DBPATH)

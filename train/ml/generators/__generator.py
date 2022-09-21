@@ -18,7 +18,8 @@ class DatasetGenerator:
 
         if not os.path.exists(self.dataset_dir):
             os.makedirs(self.dataset_dir)
-        self.__dbconnect = sqlite3.connect(infrastructure.DBPATH)
+        self.__db = sqlite3.connect(infrastructure.DBPATH)
+        self.__dbcursor = self.__db.cursor()
 
     def __delete_dataset(self):
         if self.__is_generated():
@@ -43,9 +44,13 @@ class DatasetGenerator:
                     target_year=target_year,
                     forecast_timedelta=forecast_timedelta,
                 )
+                is_done = True
             except Exception as e:
                 self.__delete_dataset()
                 raise e
+            finally:
+                if not is_done:
+                    self.__delete_dataset()
 
     def __generate(
         self,
@@ -83,6 +88,7 @@ class DatasetGenerator:
             if not os.path.exists(imagepath):
                 continue
 
+            record = list(record)
             record = self.record_conv(record)
             direction_class = ",".join(map(str, record))
             self.datasetfile.write(
@@ -109,7 +115,7 @@ class DatasetGenerator:
 
     def __init_record_buf(self, begin_year: int):
         query = self.query()
-        self.__dbconnect.cursor.execute(query)
+        self.__dbcursor = self.__dbcursor.execute(query)
         self.record_buf = []
         while True:
             record = self.__next_buf()
@@ -121,7 +127,7 @@ class DatasetGenerator:
 
     def __next_buf(self) -> list:
         if len(self.record_buf) == 0:
-            self.record_buf: list = self.__dbconnect.cursor.fetchmany(1000)
+            self.record_buf: list = self.__dbcursor.fetchmany(1000)
             if len(self.record_buf) == 0:
                 return None
         return self.record_buf.pop(0)

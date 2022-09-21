@@ -4,8 +4,8 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import models
 
-from ml.generators.wind.velocity_class import WindVelocityClassDatasetGenerator
-from ml.losses.wind.velocity_class import WindVelocityClassLoss
+from ml.generators.wind.direction import WindDirectionDatasetGenerator
+from ml.losses.wind.direction import WindDirectionLoss
 from ml.dataset import NWFDataset
 from ml.train_controller import TrainController
 from services.trainreport_writeservice import TrainReportWriteService
@@ -15,7 +15,7 @@ learning_rate = 0.001
 if __name__ == "__main__":
     for forecast_timedelta in [1, 3, 6, 9, 12]:
         for year in [2016, 2017, 2018, 2019]:
-            datasetname = "windvelocity_class/{}hourlater/{}".format(
+            datasetname = "test_wind_direction/{}hourlater/{}".format(
                 forecast_timedelta,
                 year
             )
@@ -24,7 +24,7 @@ if __name__ == "__main__":
             report_service = TrainReportWriteService(
                 reportname=datasetname, target_year=year)
 
-            generator = WindVelocityClassDatasetGenerator(
+            generator = WindDirectionDatasetGenerator(
                 datasetname=datasetname+"train")
             generator.generate(
                 begin_year=2016,
@@ -34,15 +34,16 @@ if __name__ == "__main__":
             train_dataset = NWFDataset(
                 generator.datasetfile_path)
 
-            net = models.DenseNet(num_classes=60)
+            net = models.DenseNet(num_classes=51)
             optimizer = torch.optim.Adam(
                 net.parameters(), lr=learning_rate)
-            lossfunc = WindVelocityClassLoss()
+            lossfunc = WindDirectionLoss()
             controller = TrainController(
                 train_dataset=train_dataset,
                 net=net,
                 optimizer=optimizer,
                 lossfunc=lossfunc)
+            controller.epochs = 11
 
             state_dict_path = report_service.state_dict_path()
             if not os.path.exists(state_dict_path):
@@ -58,7 +59,7 @@ if __name__ == "__main__":
             else:
                 net.load_state_dict(torch.load(state_dict_path))
 
-            generator = WindVelocityClassDatasetGenerator(
+            generator = WindDirectionDatasetGenerator(
                 datasetname=datasetname+"eval")
             generator.generate(
                 begin_year=year,
@@ -87,13 +88,13 @@ if __name__ == "__main__":
                 predicts.extend(pred.tolist())
 
                 u_correct += float((
-                    pred[:, 0:20].argmax(1) == truth[:, 0]
+                    pred[:, 0:17].argmax(1) == truth[:, 0]
                 ).type(torch.float).sum())
                 k_correct += float((
-                    pred[:, 20:40].argmax(1) == truth[:, 1]
+                    pred[:, 17:34].argmax(1) == truth[:, 1]
                 ).type(torch.float).sum())
                 t_correct += float((
-                    pred[:, 40:60].argmax(1) == truth[:, 2]
+                    pred[:, 34:51].argmax(1) == truth[:, 2]
                 ).type(torch.float).sum())
 
             eval_loss /= len(eval_dataloader)

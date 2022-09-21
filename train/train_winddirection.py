@@ -4,18 +4,18 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import models
 
-from train.ml.generators.wind.direction import WindDirectionDatasetGenerator
+from ml.generators.wind.direction import WindDirectionDatasetGenerator
 from ml.losses.wind.direction import WindDirectionLoss
 from ml.dataset import NWFDataset
 from ml.train_controller import TrainController
-from train.services.trainreport_writeservice import TrainReportWriteService
+from services.trainreport_writeservice import TrainReportWriteService
 
 
 learning_rate = 0.001
 if __name__ == "__main__":
     for forecast_timedelta in [1, 3, 6, 9, 12]:
         for year in [2016, 2017, 2018, 2019]:
-            datasetname = "windvelocity_class/{}hourlater/{}".format(
+            datasetname = "wind_direction/{}hourlater/{}".format(
                 forecast_timedelta,
                 year
             )
@@ -37,12 +37,12 @@ if __name__ == "__main__":
             net = models.DenseNet(num_classes=51)
             optimizer = torch.optim.Adam(
                 net.parameters(), lr=learning_rate)
-            loss_func = WindDirectionLoss()
+            lossfunc = WindDirectionLoss()
             controller = TrainController(
                 train_dataset=train_dataset,
                 net=net,
                 optimizer=optimizer,
-                loss_func=loss_func)
+                lossfunc=lossfunc)
 
             state_dict_path = report_service.state_dict_path()
             if not os.path.exists(state_dict_path):
@@ -81,7 +81,7 @@ if __name__ == "__main__":
                 feature = feature.to(device)
                 truth = truth.to(device).to(torch.long)
                 pred = net(feature)
-                loss = float(loss_func(pred, truth))
+                loss = float(lossfunc(pred, truth))
                 eval_loss += loss
                 truths.extend(truth.tolist())
                 predicts.extend(pred.tolist())

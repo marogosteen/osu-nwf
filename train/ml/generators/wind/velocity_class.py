@@ -6,11 +6,12 @@ class WindVelocityClassDatasetGenerator(DatasetGenerator):
         super().__init__(datasetname)
 
     def record_conv(self, record) -> list:
-        for i, v in enumerate(record[1:]):
+        record = record[1:]
+        for i, v in enumerate(record):
             vc = v // 1
-            vc = 1 if vc < 2 else v
-            v = 20 if v > 20 else v
-            v -= 1
+            vc = 1 if vc < 2 else vc
+            vc = 20 if vc > 20 else vc
+            vc -= 1
             record[i] = int(vc)
         return record
 
