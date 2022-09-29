@@ -16,13 +16,14 @@ class TrainController:
     def __init__(
         self,
         train_dataset: NWFDataset,
+        device: str,
         net: models.DenseNet,
         optimizer: torch.optim.Adam,
         lossfunc: torch.nn.Module
     ):
-        self.__device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.__device = device
         self.__train_dataset = train_dataset
-        self.__net = net.to(self.__device)
+        self.__net = net
         self.__optimizer = optimizer
         self.__lossfunc = lossfunc
 

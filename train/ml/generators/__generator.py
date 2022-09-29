@@ -6,7 +6,7 @@ import infrastructure
 
 
 class DatasetGenerator:
-    filenamepattern = "%Y%m%d%H%M"
+    filenamepattern = "%Y/%m/%d/%H%M"
     recordpattern = "%Y-%m-%d %H:%M"
 
     def __init__(self, datasetname: str) -> None:
@@ -63,7 +63,7 @@ class DatasetGenerator:
         forecast_timedelta: datetime.timedelta = datetime.timedelta(
             hours=forecast_timedelta)
 
-        print(f"generating dataset({self.datasetfile_path})...")
+        print(f"generating dataset ({self.datasetfile_path})...")
         self.datasetfile = open(self.datasetfile_path, mode="w")
         while True:
             record = self.__next_buf()
@@ -105,8 +105,6 @@ class DatasetGenerator:
     def __get_imagepath(self, fetchtime: datetime.datetime) -> str:
         return os.path.join(
             infrastructure.IMAGEDIR,
-            str(fetchtime.year),
-            str(fetchtime.month).zfill(2),
             fetchtime.strftime(self.filenamepattern)+".jpg"
         )
 

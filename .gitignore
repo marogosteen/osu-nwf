@@ -1,9 +1,9 @@
 legacy_train/
-env/
 admin/
 report/
 assets/
 analytics/
+movie_env/
 
 .DS_Store
 

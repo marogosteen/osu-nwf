@@ -34,12 +34,14 @@ if __name__ == "__main__":
             train_dataset = NWFDataset(
                 generator.datasetfile_path)
 
-            net = models.DenseNet(num_classes=3)
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            net = models.DenseNet(num_classes=3).to(device)
             optimizer = torch.optim.Adam(
                 net.parameters(), lr=learning_rate)
             loss_func = WindVelocityLoss()
             controller = TrainController(
                 train_dataset=train_dataset,
+                device=device,
                 net=net,
                 optimizer=optimizer,
                 lossfunc=loss_func)
@@ -77,18 +79,19 @@ if __name__ == "__main__":
             truth: torch.Tensor
             pred: torch.Tensor
             eval_loss = 0
-            for feature, truth in eval_dataloader:
-                feature = feature.to(device)
-                truth = truth.to(device).to(torch.long)
-                pred = net(feature)
-                loss = float(loss_func(pred, truth))
-                eval_loss += loss
-                truths.extend(truth.tolist())
-                predicts.extend(pred.tolist())
-            eval_loss /= len(eval_dataloader)
+            with torch.no_grad():
+                for feature, truth in eval_dataloader:
+                    feature = feature.to(device)
+                    truth = truth.to(device).to(torch.long)
+                    pred = net(feature)
+                    loss = float(loss_func(pred, truth))
+                    eval_loss += loss
+                    truths.extend(truth.tolist())
+                    predicts.extend(pred.tolist())
+                eval_loss /= len(eval_dataloader)
 
-            datetimes = eval_dataset.get_datasettimes()
-            report_service.save_truths(truths, datetimes)
-            report_service.save_preds(predicts, datetimes)
+                datetimes = eval_dataset.get_datasettimes()
+                report_service.save_truths(truths, datetimes)
+                report_service.save_preds(predicts, datetimes)
 
-            print("eval RMSE:", round(eval_loss**0.5, 5))
+                print("eval RMSE:", round(eval_loss**0.5, 5))
