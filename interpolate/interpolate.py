@@ -1,143 +1,155 @@
 import datetime
 import os
-import sys
 
 import sqlite3
 import numpy as np
 from PIL import Image
 from scipy.interpolate import Rbf
+import matplotlib.pyplot as plt
+from matplotlib import cm
 
 
 NUM_NEED_ARG = 1
 UINT8 = 255
-GRID_SIZE = 100
+Y_GRID_SIZE = 200
+X_GRID_SIZE = 300
 MIN_PRESSURE = 955
 MAX_PRESSURE = 1060
-XX, YY = np.meshgrid(range(GRID_SIZE), range(GRID_SIZE))
-DBPATH = "../assets/pressure_db.sqlite"
-START_TIME = datetime.datetime(year=2016, month=1, day=1, hour=0, minute=0)
-END_YEAR = 2020
-DBCONNECT = sqlite3.connect(DBPATH)
-CURSOR = DBCONNECT.cursor()
+IMAGE_DIR = "../assets/pressure_images"
+DBPATH = "../assets/weather.sqlite"
+RECORD_PATTERN = "%Y-%m-%d %H:%M"
+FILENAME_PATTERN = "%Y/%m/%d/%H%M"
+
+db = sqlite3.connect(DBPATH)
+cursor = db.cursor()
+xx, yy = np.meshgrid(range(X_GRID_SIZE), range(Y_GRID_SIZE))
 
 
-def fetch_pointarray() -> np.ndarray:
-    query = f"""
-SELECT
-    coodinate.latitude,
-    coodinate.longitude
-FROM
-    coodinate
-ORDER BY
-    coodinate.point_name
-;"""
-    CURSOR.execute(query)
-    return np.array(CURSOR.fetchall())
+class Geocode:
+    def __init__(self, record: tuple) -> None:
+        self.latitude = record[0]
+        self.longitude = record[1]
 
 
-def conv_index(points: np.ndarray) -> np.ndarray:
+class Pixcoode:
+    def __init__(self, geocode_record_arr: np.ndarray, geocode: Geocode) -> None:
+        min_geocode_record_arr = np.min(geocode_record_arr, axis=0)
+        max_geocode = Geocode(
+            np.max(geocode_record_arr - min_geocode_record_arr, axis=0)
+        )
+        min_geocode = Geocode(min_geocode_record_arr)
+
+        # pixcelに正規化
+        self.y = int((
+            geocode.latitude - min_geocode.latitude
+        ) / max_geocode.latitude * Y_GRID_SIZE)
+        self.x = int((
+            geocode.longitude - min_geocode.longitude
+        ) / max_geocode.longitude * X_GRID_SIZE)
+
+
+class CornerPixIndex:
+    def __init__(self, geocode_record_arr) -> None:
+        top_left_geocode = (36.2033, 133.3333)
+        bottom_right_geocode = (30.8377, 140.0093)
+
+        geocode = Geocode(top_left_geocode)
+        self.top = Pixcoode(geocode_record_arr, geocode).y
+        self.left = Pixcoode(geocode_record_arr, geocode).x
+
+        geocode = Geocode(bottom_right_geocode)
+        self.bottom = Pixcoode(geocode_record_arr, geocode).y
+        self.right = Pixcoode(geocode_record_arr, geocode).x
+
+
+def conv_pix_index(points: np.ndarray) -> np.ndarray:
+    # 緯度経度をPixcel座標に変換する
     mins = np.min(points, axis=0)
-    points = points - mins
-    maxs = np.max(points, axis=0)
-    return np.round(points / maxs * GRID_SIZE).astype(np.int64)
+    maxs = np.max(points - mins, axis=0)
+    points = (points - mins) / maxs
+    points[:, 0] *= Y_GRID_SIZE
+    points[:, 1] *= X_GRID_SIZE
+    return np.round(points).astype(int)
 
 
-def fetch_corner(points: np.ndarray):
-    minpoint = np.min(points, axis=0)
-    maxpoint = np.max(points - minpoint, axis=0)
-
-    query = f"""
-SELECT
-    latitude,
-    longitude
-FROM
-    coodinate
-WHERE
-    coodinate.point_name == 'matsue'
-    or coodinate.point_name == 'shionomisaki'
-;"""
-    CURSOR.execute(query)
-    cornerpoint = np.array(CURSOR.fetchall())
-    return np.round((cornerpoint - minpoint) / maxpoint * GRID_SIZE).astype(np.int64)
+def trim(arr: np.ndarray, cornerPixIndex: CornerPixIndex):
+    return arr[
+        cornerPixIndex.bottom: cornerPixIndex.top+1,
+        cornerPixIndex.left: cornerPixIndex.right+1
+    ]
 
 
-def trim(a: np.ndarray, corner_indices: np.ndarray):
-    bottom = corner_indices[:, 0].min()
-    left = corner_indices[:, 1].min()
-    top = corner_indices[:, 0].max()
-    right = corner_indices[:, 1].max()
-    return a[bottom:top+1, left:right+1]
+def norm_pressure(press2d: np.ndarray) -> np.ndarray:
+    press2d = (press2d - MIN_PRESSURE) / (MAX_PRESSURE - MIN_PRESSURE)
+    press2d[press2d < 0] = 0
+    press2d[press2d > 1] = 1
+    return press2d.astype(float)
 
 
-def norm_image(pressure_array) -> np.ndarray:
-    return (pressure_array - MIN_PRESSURE) / (1060-955) * UINT8
-
-
-num_arg = len(sys.argv[1:])
-if num_arg != NUM_NEED_ARG:
-    raise TypeError(f"takes exactly one argment ({num_arg} given)")
-output_dir = sys.argv[1]
+output_dir = "../assets/pressure_images"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-pressure_delta = MAX_PRESSURE - MIN_PRESSURE
-points = fetch_pointarray()
-place_indices = conv_index(points)
-corner_indices = fetch_corner(points)
+geocode_query = open("./query/station_coodinates.sql").read()
+geocode_record_arr = np.array(cursor.execute(geocode_query).fetchall())
+geoindices = conv_pix_index(geocode_record_arr)
+cornerPixIndex = CornerPixIndex(geocode_record_arr=geocode_record_arr)
 
-timedelta = datetime.timedelta(hours=1)
-db_pattern = "%Y-%m-%d %H:%M"
-filename_pattern = "%Y%m%d%H%M"
-time = START_TIME
+press_query = open("./query/pressures_per_hour.sql").read()
+cursor = cursor.execute(press_query)
+colormap = cm.get_cmap("jet")
 while True:
-    if time.year == END_YEAR:
+    press_records: list[list[str]] = cursor.fetchmany(5000)
+    if not press_records:
         break
 
-    str_time = time.strftime(db_pattern)
-    savedir = output_dir+f"{time.year}/{str(time.month).zfill(2)}/"
-    savedir = os.path.join(
-        output_dir,
-        str(time.year),
-        str(time.month).zfill(2)
-    )
-    if not os.path.exists(savedir):
-        print(str_time)
-        os.makedirs(savedir)
+    for record in press_records:
+        record_time = datetime.datetime.strptime(record[0], RECORD_PATTERN)
+        writepath = os.path.join(
+            IMAGE_DIR, record_time.strftime(FILENAME_PATTERN)+".jpg")
+        dirname = os.path.dirname(writepath)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+            print(dirname)
 
-    query = f"""
-SELECT
-    air_pressure.air_pressure
-FROM
-    air_pressure
-    inner join coodinate on air_pressure.place == coodinate.point_name
-WHERE
-    air_pressure.datetime = '{str_time}'
-ORDER BY
-    coodinate.point_name
-;"""
-    CURSOR.execute(query)
-    records = CURSOR.fetchall()
-    if records.count((None)) > len(records)/2:
-        msg = f"欠損値が半数以上で、画像化できません。record time: {str_time}"
-        exit(msg)
+        press_arr = np.array([
+            float(pressure) if pressure else None for pressure in record[1].split(",")
+        ]).reshape(-1, 1)
+        if np.sum(press_arr == None) > len(press_arr)//2:
+            msg = "欠損値が半数以上で、画像化できません。record time: {}".format(
+                record_time.strftime(RECORD_PATTERN)
+            )
+            exit(msg)
 
-    records = np.hstack((place_indices, records))
-    records = records[records[:, 2] != None].astype(np.float64)
-    rbf = Rbf(
-        records[:, 1],
-        records[:, 0],
-        records[:, 2],
-        function='linear'
-    )
-    pressure_array: np.ndarray = rbf(XX, YY)
-    pressure_array = trim(pressure_array, corner_indices)
-    pressure_array = np.round(
-        norm_image(pressure_array)
-    ).astype(np.uint8)
-    pressure_array = pressure_array[-1::-1]
+        idx_and_press = np.hstack((geoindices, press_arr))
+        idx_and_press = np.asarray(
+            idx_and_press[idx_and_press[:, 2] != None],
+            dtype=float
+        )
 
-    img = Image.fromarray(pressure_array)
-    savepath = os.path.join(savedir, f"{time.strftime(filename_pattern)}.jpg")
-    img.save(savepath, quolity=100)
+        rbf = Rbf(
+            idx_and_press[:, 1],
+            idx_and_press[:, 0],
+            idx_and_press[:, 2],
+            function='linear'
+        )
 
-    time += timedelta
+        press2d: np.ndarray = rbf(xx, yy)
+        norm_press2d = norm_pressure(press2d)
+
+        # norm_press2d = np.uint8(colormap(norm_press2d) * UINT8)
+        # fig, ax = plt.subplots()
+        # ax.imshow(press_img, cmap="jet")
+        # ax.plot(idx_and_press[:, 1], idx_and_press[:, 0], "o", fillstyle="none")
+        # ax.invert_yaxis()
+        # plt.savefig(writepath)
+        # plt.close()
+
+        trimed_norm_press2d = trim(norm_press2d, cornerPixIndex)
+        press_img = np.uint8(colormap(trimed_norm_press2d) * UINT8)
+        press_img = press_img[-1::-1]
+        pil_img = Image.fromarray(press_img)
+        pil_img = pil_img.convert("RGB")
+        pil_img.save(writepath, quolity=100)
+
+    print(writepath)
