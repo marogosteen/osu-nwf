@@ -10,6 +10,7 @@ class WindVelocityClassLoss(nn.Module):
     def forward(
         self, p: torch.Tensor, t: torch.Tensor
     ) -> torch.Tensor:
+        t = t.to(torch.long)
         loss = self.__lossfunc(p[:, 0:20], t[:, 0])
         loss += self.__lossfunc(p[:, 20:40], t[:, 1])
         loss += self.__lossfunc(p[:, 40:60], t[:, 2])

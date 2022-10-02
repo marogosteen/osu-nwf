@@ -82,7 +82,7 @@ if __name__ == "__main__":
             with torch.no_grad():
                 for feature, truth in eval_dataloader:
                     feature = feature.to(device)
-                    truth = truth.to(device).to(torch.long)
+                    truth = truth.to(device).to(torch.float32)
                     pred = net(feature)
                     loss = float(loss_func(pred, truth))
                     eval_loss += loss

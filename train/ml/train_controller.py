@@ -41,7 +41,7 @@ class TrainController:
             truth: torch.Tensor
             for feature, truth in train_dataloader:
                 feature = feature.to(self.__device)
-                truth = truth.to(self.__device).to(torch.int64)
+                truth = truth.to(self.__device)
                 pred = self.__net(feature)
                 loss = self.__lossfunc(pred, truth)
                 sumloss += float(loss) / 3.
