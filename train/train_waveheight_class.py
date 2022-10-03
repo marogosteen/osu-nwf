@@ -59,16 +59,16 @@ if __name__ == "__main__":
             else:
                 net.load_state_dict(torch.load(state_dict_path))
 
-                generator = WaveHeightClassDatasetGenerator(
-                    datasetname=datasetname+"eval")
-                generator.generate(
-                    begin_year=year,
-                    end_year=year+1,
-                    forecast_timedelta=forecast_timedelta)
-                eval_dataset = NWFDataset(
-                    generator.datasetfile_path)
-                eval_dataloader = DataLoader(
-                    eval_dataset, batch_size=controller.batch_size)
+            generator = WaveHeightClassDatasetGenerator(
+                datasetname=datasetname+"eval")
+            generator.generate(
+                begin_year=year,
+                end_year=year+1,
+                forecast_timedelta=forecast_timedelta)
+            eval_dataset = NWFDataset(
+                generator.datasetfile_path)
+            eval_dataloader = DataLoader(
+                eval_dataset, batch_size=controller.batch_size)
 
             # このメソッド作りたい
             device = "cuda" if torch.cuda.is_available() else "cpu"
