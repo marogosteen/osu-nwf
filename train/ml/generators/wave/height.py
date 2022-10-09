@@ -6,7 +6,7 @@ class WaveHeightDatasetGenerator(DatasetGenerator):
         super().__init__(datasetname)
 
     def record_conv(self, record) -> list:
-        return record[1]
+        return record[1:2]
 
     def query(self) -> str:
         return """

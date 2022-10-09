@@ -35,7 +35,7 @@ if __name__ == "__main__":
                 generator.datasetfile_path)
 
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            net = models.DenseNet(num_classes=3).to(device)
+            net = models.DenseNet(num_classes=1).to(device)
             optimizer = torch.optim.Adam(
                 net.parameters(), lr=learning_rate)
             loss_func = WaveHeightLoss()
