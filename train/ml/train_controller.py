@@ -11,7 +11,7 @@ from torchvision import models
 class TrainController:
     epochs = 1000
     batch_size = 256
-    earlystop_endure = 10
+    max_endure = 10
 
     def __init__(
         self,
@@ -34,6 +34,7 @@ class TrainController:
         best_state_dict = None
         best_loss = None
         loss_history = []
+        endure = 0
         for epoch in tqdm(range(self.epochs)):
             self.__net.train()
             sumloss = 0
@@ -55,11 +56,15 @@ class TrainController:
             if not best_loss:
                 best_loss = float(meanloss)
                 best_state_dict = self.__net.state_dict()
+                endure = 0
             elif best_loss >= meanloss:
                 best_loss = float(meanloss)
                 best_state_dict = self.__net.state_dict()
+                endure = 0
+            else:
+                endure += 1
 
-            if self.earlystop_endure < epoch - loss_history.index(best_loss):
+            if endure > self.max_endure:
                 print("Early Stop \n")
                 break
 

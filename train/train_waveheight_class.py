@@ -91,20 +91,10 @@ if __name__ == "__main__":
                     u_correct += float((
                         pred[:, 0:9].argmax(1) == truth[:, 0]
                     ).type(torch.float).sum())
-                    k_correct += float((
-                        pred[:, 9:18].argmax(1) == truth[:, 1]
-                    ).type(torch.float).sum())
-                    t_correct += float((
-                        pred[:, 18:27].argmax(1) == truth[:, 2]
-                    ).type(torch.float).sum())
 
                 eval_loss /= len(eval_dataloader)
                 u_correct /= len(eval_dataset)
-                k_correct /= len(eval_dataset)
-                t_correct /= len(eval_dataset)
                 print(f"ukb Accuracy: {(100*u_correct):>0.1f}%")
-                print(f"kix Accuracy: {(100*k_correct):>0.1f}%")
-                print(f"tomogashima Accuracy: {(100*t_correct):>0.1f}%")
 
                 datetimes = eval_dataset.get_datasettimes()
                 report_service.save_truths(truths, datetimes)
