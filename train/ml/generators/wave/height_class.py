@@ -10,7 +10,7 @@ class WaveHeightClassDatasetGenerator(DatasetGenerator):
         hc = h // 0.5
         hc = 0 if hc < 0 else hc
         hc = 8 if hc > 8 else hc
-        return int(hc)
+        return [int(hc)]
 
     def query(self) -> str:
         return """

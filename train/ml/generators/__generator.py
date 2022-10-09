@@ -37,6 +37,7 @@ class DatasetGenerator:
         if not self.__is_generated():
             # if an error occurs during generate,
             # delete the incomplete dataset.
+            is_done = False
             try:
                 self.__generate(
                     begin_year=begin_year,
