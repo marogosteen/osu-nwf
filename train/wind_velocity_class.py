@@ -11,14 +11,11 @@ from ml.train_controller import TrainController
 from services.trainreport_writeservice import TrainReportWriteService
 
 
-learning_rate = 0.001
 if __name__ == "__main__":
     for forecast_timedelta in [1, 3, 6, 9, 12]:
         for year in [2016, 2017, 2018, 2019]:
             datasetname = "wind/velocity_class/{}hourlater/{}".format(
-                forecast_timedelta,
-                year
-            )
+                forecast_timedelta, year)
             print(datasetname)
 
             report_service = TrainReportWriteService(
@@ -27,24 +24,17 @@ if __name__ == "__main__":
             generator = WindVelocityClassDatasetGenerator(
                 datasetname=datasetname+"train")
             generator.generate(
-                begin_year=2016,
-                end_year=2020,
-                target_year=year,
+                begin_year=2016, end_year=2020, target_year=year,
                 forecast_timedelta=forecast_timedelta)
             train_dataset = NWFDataset(
                 generator.datasetfile_path)
 
             device = "cuda" if torch.cuda.is_available() else "cpu"
             net = models.DenseNet(num_classes=60).to(device)
-            optimizer = torch.optim.Adam(
-                net.parameters(), lr=learning_rate)
             lossfunc = WindVelocityClassLoss()
             controller = TrainController(
-                train_dataset=train_dataset,
-                device=device,
-                net=net,
-                optimizer=optimizer,
-                lossfunc=lossfunc)
+                train_dataset=train_dataset, device=device,
+                net=net, lossfunc=lossfunc)
 
             state_dict_path = report_service.state_dict_path()
             if not os.path.exists(state_dict_path):
@@ -63,8 +53,7 @@ if __name__ == "__main__":
             generator = WindVelocityClassDatasetGenerator(
                 datasetname=datasetname+"eval")
             generator.generate(
-                begin_year=year,
-                end_year=year+1,
+                begin_year=year, end_year=year+1,
                 forecast_timedelta=forecast_timedelta)
             eval_dataset = NWFDataset(
                 generator.datasetfile_path)
