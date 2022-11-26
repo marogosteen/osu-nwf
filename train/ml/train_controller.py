@@ -4,7 +4,7 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 
-from ml.dataset import NWFDataset
+from ml.dataset.base_dataset import BaseNWFDataset
 from torchvision import models
 
 
@@ -15,7 +15,7 @@ class TrainController:
 
     def __init__(
         self,
-        train_dataset: NWFDataset,
+        train_dataset: BaseNWFDataset,
         device: str,
         net: models.DenseNet,
         optimizer: torch.optim.Adam,

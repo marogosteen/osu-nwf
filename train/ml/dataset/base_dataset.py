@@ -7,16 +7,16 @@ from ml.dataset.generator.generator import DatasetGenerator
 
 class BaseNWFDataset(Dataset):
     def __init__(self, generator: DatasetGenerator) -> None:
-        super(BaseNWFDataset).__init__()
+        super().__init__()
 
         generator.generate()
-        self.__feature_names, self.__image_path_list = self.__read_dataset(
+        self.__feature_names, self.features = self.__read_dataset(
             generator.feature_path)
-        self.__truth_names, self.__truths = self.__read_dataset(
+        self.__truth_names, self.truths = self.__read_dataset(
             generator.truth_path)
 
-        self.__len = len(self.__image_path_list)
-        self.__truth_size = len(self.__image_path_list[0])
+        self.__len = len(self.features)
+        self.__truth_size = len(self.features[0])
 
     @property
     def feature_names(self) -> list:
@@ -34,9 +34,9 @@ class BaseNWFDataset(Dataset):
         return self.__len
 
     def get_datasettimes(self) -> list[str]:
-        return list(map(lambda line: line[0], self.__image_path_list))
+        return list(map(lambda line: line[0], self.features))
 
-    def __read_dataset(path: str) -> tuple[list, list]:
+    def __read_dataset(self, path: str) -> tuple[list, list]:
         if not os.path.exists(path):
             raise FileNotFoundError(
                 "dataset fileが見つかりません。path: {} cwd: {}".format(
@@ -44,7 +44,7 @@ class BaseNWFDataset(Dataset):
         return (
             open(path).readline().strip().split(","),
             list(map(
-                lambda l: l.strip().split(","),
+                lambda l: l.strip().split(",")[1:],
                 open(path).readlines()[1:])
             )
         )

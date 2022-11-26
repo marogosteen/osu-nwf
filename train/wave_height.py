@@ -16,7 +16,8 @@ learning_rate = 0.001
 if __name__ == "__main__":
     for forecast_timedelta in [1, 3, 6, 9, 12]:
         for year in [2016, 2017, 2018, 2019]:
-            datasetname = "wave/height/{}hourlater/{}".format(
+            # datasetname = "wave/height/{}hourlater/{}".format(
+            datasetname = "runtest/wave/height/{}hourlater/{}".format(
                 forecast_timedelta,
                 year
             )

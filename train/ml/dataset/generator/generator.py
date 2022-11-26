@@ -1,6 +1,7 @@
 import os
 
-from train.ml.dataset.generator.fetcher.base_fetcher import Fetcher
+import infrastructure
+from ml.dataset.generator.fetcher.base_fetcher import Fetcher
 
 
 class DatasetGenerator:
@@ -10,12 +11,15 @@ class DatasetGenerator:
         feature_fetcher: Fetcher,
         truth_fetcher: Fetcher
     ) -> None:
-        self.__feature_path = dataset_dir + "feature.csv"
-        self.__truth_path = dataset_dir + "truth.csv"
+        self.__feature_path = os.path.join(
+            infrastructure.DATASET_STORE_DIR, dataset_dir + "feature.csv")
+        self.__truth_path = os.path.join(
+            infrastructure.DATASET_STORE_DIR, dataset_dir + "truth.csv")
         self.__feature_fetcher = feature_fetcher
         self.__truth_fetcher = truth_fetcher
 
-        if dataset_dir := os.path.dirname(self.__feature_path):
+        dataset_dir = os.path.dirname(self.__feature_path)
+        if not os.path.exists(dataset_dir):
             os.makedirs(dataset_dir)
 
     @property
@@ -58,9 +62,9 @@ class DatasetGenerator:
 
         while True:
             record_time, feature = self.__feature_fetcher.fetch()
-            truth = self.__truth_fetcher.fetch()
+            _, truth = self.__truth_fetcher.fetch()
 
-            if len(feature) or len(truth):
+            if not len(feature) or not len(truth):
                 break
 
             if None in feature or None in truth:
