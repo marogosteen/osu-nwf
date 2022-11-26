@@ -4,12 +4,13 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import models
 
-from ml.generators.wave.height import WaveHeightDatasetGenerator
+from ml.dataset import NWFPressureMap
+from ml.dataset.generator import DatasetGenerator
+from ml.dataset.generator.fetcher import PressureImagePathFetcher
+from ml.dataset.generator.fetcher import WaveHeightFetcher
 from ml.losses.wave.height import WaveHeightLoss
-from ml.dataset import NWFDataset
 from ml.train_controller import TrainController
 from services.trainreport_writeservice import TrainReportWriteService
-
 
 learning_rate = 0.001
 if __name__ == "__main__":
@@ -24,15 +25,15 @@ if __name__ == "__main__":
             report_service = TrainReportWriteService(
                 reportname=datasetname, target_year=year)
 
-            generator = WaveHeightDatasetGenerator(
-                datasetname=datasetname+"train")
-            generator.generate(
-                begin_year=2016,
-                end_year=2020,
-                target_year=year,
-                forecast_timedelta=forecast_timedelta)
-            train_dataset = NWFDataset(
-                generator.datasetfile_path)
+            dataset_generator = DatasetGenerator(
+                dataset_dir=datasetname,
+                feature_fetcher=PressureImagePathFetcher(year, "train"),
+                truth_fetcher=WaveHeightFetcher(
+                    year, forecast_timedelta, "train")
+            )
+
+            train_dataset = NWFPressureMap(
+                generator=dataset_generator)
 
             device = "cuda" if torch.cuda.is_available() else "cpu"
             net = models.DenseNet(num_classes=1).to(device)
@@ -60,14 +61,14 @@ if __name__ == "__main__":
             else:
                 net.load_state_dict(torch.load(state_dict_path))
 
-            generator = WaveHeightDatasetGenerator(
-                datasetname=datasetname+"eval")
-            generator.generate(
-                begin_year=year,
-                end_year=year+1,
-                forecast_timedelta=forecast_timedelta)
-            eval_dataset = NWFDataset(
-                generator.datasetfile_path)
+            dataset_generator = DatasetGenerator(
+                dataset_dir=datasetname,
+                feature_fetcher=PressureImagePathFetcher(year, "eval"),
+                truth_fetcher=WaveHeightFetcher(
+                    year, forecast_timedelta, "eval")
+            )
+
+            eval_dataset = NWFPressureMap(generator=dataset_generator)
             eval_dataloader = DataLoader(
                 eval_dataset, batch_size=controller.batch_size)
 

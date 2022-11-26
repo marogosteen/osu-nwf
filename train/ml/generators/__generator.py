@@ -67,7 +67,7 @@ class DatasetGenerator:
         print(f"generating dataset ({self.datasetfile_path})...")
         self.datasetfile = open(self.datasetfile_path, mode="w")
         while True:
-            record = self.__next_buf()
+            record = self.__next_record()
 
             # 終了条件
             if record is None:
@@ -117,14 +117,14 @@ class DatasetGenerator:
         self.__dbcursor = self.__dbcursor.execute(query)
         self.record_buf = []
         while True:
-            record = self.__next_buf()
+            record = self.__next_record()
             record_datetime = datetime.datetime.strptime(
                 record[0], self.recordpattern)
             if record_datetime.year == begin_year:
                 self.record_buf.insert(0, record)
                 break
 
-    def __next_buf(self) -> list:
+    def __next_record(self) -> list:
         if len(self.record_buf) == 0:
             self.record_buf: list = self.__dbcursor.fetchmany(1000)
             if len(self.record_buf) == 0:
