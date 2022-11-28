@@ -6,8 +6,8 @@ from torchvision import models
 
 from ml.dataset import NWFPressureMap
 from ml.dataset.generator import DatasetGenerator
-from ml.dataset.generator.fetcher import (
-    PressureImagePathFetcher, WindVelocityFetcher)
+from ml.dataset.generator.fetcher.pressure_map import PressureImagePathFetcher
+from ml.dataset.generator.fetcher.wind import WindVelocityFetcher
 from ml.losses.wind.velocity import WindVelocityLoss
 from ml.train_controller import TrainController
 from services.trainreport_writeservice import TrainReportWriteService
