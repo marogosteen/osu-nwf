@@ -12,19 +12,23 @@ class TrainController:
     epochs = 1000
     batch_size = 256
     max_endure = 10
+    learning_rate = 0.01
+    schedule_gamma = 0.975
 
     def __init__(
         self,
         train_dataset: BaseNWFDataset,
         device: str,
         net: models.DenseNet,
-        optimizer: torch.optim.Adam,
         lossfunc: torch.nn.Module
     ):
         self.__device = device
         self.__train_dataset = train_dataset
         self.__net = net
-        self.__optimizer = optimizer
+        self.__optimizer = torch.optim.Adam(
+            net.parameters(), lr=self.learning_rate)
+        self.__scheduler = torch.optim.lr_scheduler.ExponentialLR(
+            self.__optimizer, gamma=self.schedule_gamma)
         self.__lossfunc = lossfunc
 
     def train_model(self) -> Tuple[models.DenseNet, list, dict]:
@@ -35,7 +39,7 @@ class TrainController:
         best_loss = None
         loss_history = []
         endure = 0
-        for epoch in tqdm(range(self.epochs)):
+        for _ in tqdm(range(self.epochs)):
             self.__net.train()
             sumloss = 0
             feature: torch.Tensor
@@ -49,6 +53,7 @@ class TrainController:
                 self.__optimizer.zero_grad()
                 loss.backward()
                 self.__optimizer.step()
+            self.__scheduler.step()
 
             meanloss = sumloss / len(train_dataloader)
             loss_history.append(meanloss)

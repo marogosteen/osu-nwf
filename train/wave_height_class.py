@@ -13,14 +13,11 @@ from ml.train_controller import TrainController
 from services.trainreport_writeservice import TrainReportWriteService
 
 
-learning_rate = 0.01
 if __name__ == "__main__":
     for forecast_timedelta in [1, 3, 6, 9, 12]:
         for year in [2016, 2017, 2018, 2019]:
             datasetname = "wave/height_class/{}hourlater/{}".format(
-                forecast_timedelta,
-                year
-            )
+                forecast_timedelta, year)
             print(datasetname)
 
             report_service = TrainReportWriteService(
@@ -38,14 +35,9 @@ if __name__ == "__main__":
 
             device = "cuda" if torch.cuda.is_available() else "cpu"
             net = models.DenseNet(num_classes=27).to(device)
-            optimizer = torch.optim.Adam(
-                net.parameters(), lr=learning_rate)
             loss_func = WaveHeightClassLoss()
             controller = TrainController(
-                train_dataset=train_dataset,
-                device=device,
-                net=net,
-                optimizer=optimizer,
+                train_dataset=train_dataset, device=device, net=net,
                 lossfunc=loss_func)
 
             state_dict_path = report_service.state_dict_path()
