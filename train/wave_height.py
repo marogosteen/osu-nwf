@@ -6,17 +6,17 @@ from torchvision import models
 
 from ml.dataset import NWFPressureMap
 from ml.dataset.generator import DatasetGenerator
-from ml.dataset.generator.fetcher import PressureImagePathFetcher
-from ml.dataset.generator.fetcher import WaveHeightFetcher
+from ml.dataset.generator.fetcher import (
+    PressureImagePathFetcher, WaveHeightFetcher)
 from ml.losses.wave.height import WaveHeightLoss
 from ml.train_controller import TrainController
 from services.trainreport_writeservice import TrainReportWriteService
 
-learning_rate = 0.001
+
+learning_rate = 0.01
 if __name__ == "__main__":
     for forecast_timedelta in [1, 3, 6, 9, 12]:
         for year in [2016, 2017, 2018, 2019]:
-            # datasetname = "wave/height/{}hourlater/{}".format(
             datasetname = "runtest/wave/height/{}hourlater/{}".format(
                 forecast_timedelta,
                 year
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
             dataset_generator = DatasetGenerator(
                 dataset_dir=datasetname,
-                feature_fetcher=PressureImagePathFetcher(year, "train"),
+                feature_fetcher=PressureImagePathFetcher(year, 0, "train"),
                 truth_fetcher=WaveHeightFetcher(
                     year, forecast_timedelta, "train")
             )
@@ -38,8 +38,7 @@ if __name__ == "__main__":
 
             device = "cuda" if torch.cuda.is_available() else "cpu"
             net = models.DenseNet(num_classes=1).to(device)
-            optimizer = torch.optim.Adam(
-                net.parameters(), lr=learning_rate)
+            optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
             loss_func = WaveHeightLoss()
             controller = TrainController(
                 train_dataset=train_dataset,

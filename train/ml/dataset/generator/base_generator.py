@@ -1,7 +1,7 @@
 import os
 
 import infrastructure
-from ml.dataset.generator.fetcher.base_fetcher import Fetcher
+from ml.dataset.generator.fetcher import Fetcher
 
 
 class DatasetGenerator:
@@ -57,24 +57,35 @@ class DatasetGenerator:
                 self.__delete_dataset()
 
     def __generate(self):
+        print("generating dataset... ({}, {})".format(
+            self.__feature_path, self.__truth_path))
+
         self.__feature_file = open(self.__feature_path, "w")
         self.__truth_file = open(self.__truth_path, "w")
 
-        while True:
-            record_time, feature = self.__feature_fetcher.fetch()
-            _, truth = self.__truth_fetcher.fetch()
+        self.__feature_file.write("{}\n".format(
+            ",".join(self.__feature_fetcher.header)))
+        self.__truth_file.write("{}\n".format(
+            ",".join(self.__truth_fetcher.header)))
 
-            if not len(feature) or not len(truth):
+        while True:
+            record_times, features = self.__feature_fetcher.fetch_many()
+            _, truths = self.__truth_fetcher.fetch_many()
+
+            if not features or not truths:
                 break
 
-            if None in feature or None in truth:
-                continue
+            for record_time, feature, truth in zip(
+                record_times, features, truths
+            ):
+                if None in feature or None in truth:
+                    continue
 
-            feature_line = ",".join(map(str, feature))
-            truth_line = ",".join(map(str, truth))
+                feature_line = ",".join(map(str, feature))
+                truth_line = ",".join(map(str, truth))
 
-            self.__feature_file.write(f"{record_time},{feature_line}\n")
-            self.__truth_file.write(f"{record_time},{truth_line}\n")
+                self.__feature_file.write(f"{record_time},{feature_line}\n")
+                self.__truth_file.write(f"{record_time},{truth_line}\n")
 
         self.__feature_file.close()
         self.__truth_file.close()

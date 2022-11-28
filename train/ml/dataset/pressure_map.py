@@ -5,7 +5,7 @@ from PIL import Image
 from torchvision import transforms
 
 from ml.dataset.base_dataset import BaseNWFDataset
-from ml.dataset.generator.generator import DatasetGenerator
+from ml.dataset.generator import DatasetGenerator
 
 
 class NWFPressureMap(BaseNWFDataset):

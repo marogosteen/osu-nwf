@@ -1,4 +1,15 @@
-from .pressure_image_path import PressureImagePathFetcher
-from .wave.wave_height import WaveHeightFetcher
+from .base_fetcher import Fetcher
+from .pressure_map import PressureImagePathFetcher
+from .wave import WaveHeightFetcher, WaveHeightClassFetcher
+from .wind import (
+    WindDirectionFetcher, WindVelocityFetcher, WindVelocityClassFetcher)
 
-__all__ = ["PressureImagePathFetcher", "WaveHeightFetcher"]
+__all__ = [
+    "Fetcher",
+    "PressureImagePathFetcher",
+    "WaveHeightFetcher",
+    "WaveHeightClassFetcher",
+    "WindDirectionFetcher",
+    "WindVelocityFetcher",
+    "WindVelocityClassFetcher"
+]

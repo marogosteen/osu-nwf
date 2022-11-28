@@ -8,7 +8,16 @@
             "name": "train wind direction",
             "type": "python",
             "request": "launch",
-            "program": "${cwd}/train/train_winddirection.py",
+            "program": "${cwd}/train/wind_direction.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${cwd}/train"
+        },
+        {
+            "name": "train wave height",
+            "type": "python",
+            "request": "launch",
+            "program": "${cwd}/train/wave_height.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "cwd": "${cwd}/train"

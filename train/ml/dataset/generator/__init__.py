@@ -1,4 +1,4 @@
 from . import fetcher
-from .generator import DatasetGenerator
+from .base_generator import DatasetGenerator
 
 __all__ = ["fetcher", "DatasetGenerator"]

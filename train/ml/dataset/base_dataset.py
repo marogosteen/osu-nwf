@@ -2,7 +2,7 @@ import os
 
 from torch.utils.data import Dataset
 
-from ml.dataset.generator.generator import DatasetGenerator
+from ml.dataset.generator import DatasetGenerator
 
 
 class BaseNWFDataset(Dataset):
