@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
             dataset_generator = DatasetGenerator(
                 dataset_dir=datasetname,
-                feature_fetcher=PressureImagePathFetcher(year, "eval"),
+                feature_fetcher=PressureImagePathFetcher(year, 0, "eval"),
                 truth_fetcher=WaveHeightFetcher(
                     year, forecast_timedelta, "eval")
             )
