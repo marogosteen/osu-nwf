@@ -9,6 +9,9 @@ class Fetcher:
     def __init__(
         self, target_year: int, forecast_timedelta: int, mode: str
     ) -> None:
+        if not (mode == "train" or mode == "eval"):
+            raise ValueError("mode value must be train or eval.")
+
         self.__db = sqlite3.connect(infrastructure.DBPATH)
         self.__corsor = self.__db.cursor().execute(
             self.query(target_year, forecast_timedelta, mode))

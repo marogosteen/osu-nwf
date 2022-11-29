@@ -9,12 +9,18 @@ class DatasetGenerator:
         self,
         dataset_dir: str,
         feature_fetcher: Fetcher,
-        truth_fetcher: Fetcher
+        truth_fetcher: Fetcher,
+        mode: str
     ) -> None:
+        if not (mode == "train" or mode == "eval"):
+            raise ValueError("mode value must be train or eval.")
+
         self.__feature_path = os.path.join(
-            infrastructure.DATASET_STORE_DIR, dataset_dir + "feature.csv")
+            infrastructure.DATASET_STORE_DIR,
+            dataset_dir + f"feature_{mode}.csv")
         self.__truth_path = os.path.join(
-            infrastructure.DATASET_STORE_DIR, dataset_dir + "truth.csv")
+            infrastructure.DATASET_STORE_DIR,
+            dataset_dir + f"truth_{mode}.csv")
         self.__feature_fetcher = feature_fetcher
         self.__truth_fetcher = truth_fetcher
 
