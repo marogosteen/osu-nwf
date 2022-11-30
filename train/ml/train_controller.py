@@ -1,4 +1,4 @@
-from typing import Tuple
+import os
 
 from tqdm import tqdm
 import torch
@@ -13,7 +13,7 @@ class TrainController:
     batch_size = 256
     max_endure = 10
     learning_rate = 0.01
-    schedule_gamma = 0.975
+    schedule_gamma = 0.9
 
     def __init__(
         self,
@@ -31,10 +31,11 @@ class TrainController:
             self.__optimizer, gamma=self.schedule_gamma)
         self.__lossfunc = lossfunc
 
-    def train_model(self) -> Tuple[models.DenseNet, list, dict]:
+    def train_model(self) -> tuple[models.DenseNet, list, dict]:
         print("traning model...")
         train_dataloader = DataLoader(
-            self.__train_dataset, batch_size=self.batch_size, shuffle=True)
+            self.__train_dataset, batch_size=self.batch_size, shuffle=True,
+            num_workers=os.cpu_count(), pin_memory=True)
         best_state_dict = None
         best_loss = None
         loss_history = []
