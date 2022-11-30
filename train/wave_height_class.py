@@ -27,7 +27,8 @@ if __name__ == "__main__":
                 dataset_dir=datasetname,
                 feature_fetcher=PressureImagePathFetcher(year, 0, "train"),
                 truth_fetcher=WaveHeightClassFetcher(
-                    year, forecast_timedelta, "train")
+                    year, forecast_timedelta, "train"),
+                mode="train"
             )
 
             train_dataset = NWFPressureMap(
@@ -58,7 +59,8 @@ if __name__ == "__main__":
                 dataset_dir=datasetname,
                 feature_fetcher=PressureImagePathFetcher(year, 0, "eval"),
                 truth_fetcher=WaveHeightClassFetcher(
-                    year, forecast_timedelta, "eval")
+                    year, forecast_timedelta, "eval"),
+                mode="eval"
             )
 
             eval_dataset = NWFPressureMap(
