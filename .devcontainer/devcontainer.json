@@ -19,7 +19,7 @@
 	"remoteUser": "vscode",
 	"features": {
 		"python": "latest"
-	},
+	}
 
-	"runArgs": ["--gpus", "all"]
+	// "runArgs": ["--gpus", "all"]
 }

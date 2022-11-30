@@ -26,10 +26,6 @@ class BaseNWFDataset(Dataset):
     def truth_names(self) -> list:
         return self.__truth_names
 
-    @property
-    def truth_size(self):
-        return self.__truth_size
-
     def __len__(self) -> int:
         return self.__len
 

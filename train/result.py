@@ -16,7 +16,7 @@ train_dataset = wave_dataset.WaveTrainDataset(nwf_config)
 eval_dataset = wave_dataset.WaveEvalDataset(nwf_config, train_dataset.normalizer)
 
 state_dict = torch.load(STATE_DICT_PATH)
-nwf_net = net.NNWFNet(
+nwf_net = net.NWFNet(
     eval_dataset.feature_size,
     eval_dataset.truth_size)
 nwf_net.load_state_dict(state_dict)

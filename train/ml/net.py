@@ -2,9 +2,9 @@ from torch import nn
 import torch
 
 
-class NNWFNet(nn.Module):
+class NWFNet(nn.Module):
     def __init__(self, feature_size: int, output_size: int):
-        super(NNWFNet, self).__init__()
+        super(NWFNet, self).__init__()
         self.linearSequential = nn.Sequential(
             nn.Linear(feature_size, 64),
             nn.ReLU(),
