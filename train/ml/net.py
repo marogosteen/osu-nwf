@@ -24,6 +24,7 @@ class NWFNet(nn.Module):
             nn.Linear(16, output_size)
         )
 
-    def forward(self, x) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.to(torch.float32)
         x: torch.Tensor = self.linearSequential(x)
         return x

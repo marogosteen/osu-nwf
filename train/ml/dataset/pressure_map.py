@@ -1,5 +1,3 @@
-import typing
-
 import torch
 from PIL import Image
 from torchvision import transforms
@@ -18,7 +16,7 @@ class NWFPressureMap(BaseNWFDataset):
 
     def __getitem__(
         self, idx: int
-    ) -> typing.Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         image_path = self.features[idx][0]
         image = Image.open(image_path).convert("RGB")
         image = self.__transforms(image)

@@ -17,9 +17,7 @@ if __name__ == "__main__":
     for forecast_timedelta in [1, 3, 6, 9, 12]:
         for year in [2016, 2017, 2018, 2019]:
             datasetname = "wave/height/{}hourlater/{}".format(
-                forecast_timedelta,
-                year
-            )
+                forecast_timedelta, year)
             print(datasetname)
 
             report_service = TrainReportWriteService(

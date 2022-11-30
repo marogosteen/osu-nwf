@@ -23,6 +23,15 @@
             "cwd": "${cwd}/train"
         },
         {
+            "name": "train rewet three point uv",
+            "type": "python",
+            "request": "launch",
+            "program": "${cwd}/train/three_point_uv.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${cwd}/train"
+        },
+        {
             "name": "interpolate",
             "type": "python",
             "request": "launch",

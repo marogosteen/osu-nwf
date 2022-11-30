@@ -3,7 +3,7 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from ml.dataset import NWFPressureMap
+from ml.dataset.rewet import ThreePointUVVelo
 from ml.dataset.generator import DatasetGenerator
 from ml.dataset.generator.fetcher.rewet import ThereePointUVFetcher
 from ml.dataset.generator.fetcher.wave import WaveHeightFetcher
@@ -26,16 +26,17 @@ if __name__ == "__main__":
                 dataset_dir=datasetname,
                 feature_fetcher=ThereePointUVFetcher(year, 0, "train"),
                 truth_fetcher=WaveHeightFetcher(
-                    year, forecast_timedelta, "train")
+                    year, forecast_timedelta, "train"),
+                mode="train"
             )
 
-            train_dataset = NWFPressureMap(
+            train_dataset = ThreePointUVVelo(
                 generator=dataset_generator)
 
             device = "cuda" if torch.cuda.is_available() else "cpu"
             net = NWFNet(
-                len(train_dataset.feature_names)-1,
-                len(train_dataset.truth_names)-1).to(device)
+                len(train_dataset.feature_names),
+                len(train_dataset.truth_names)).to(device)
             loss_func = torch.nn.MSELoss()
             controller = TrainController(
                 train_dataset=train_dataset, device=device, net=net,
@@ -60,10 +61,11 @@ if __name__ == "__main__":
                 feature_fetcher=ThereePointUVFetcher(
                     year, 0, "eval"),
                 truth_fetcher=WaveHeightFetcher(
-                    year, forecast_timedelta, "eval")
+                    year, forecast_timedelta, "eval"),
+                mode="eval"
             )
 
-            eval_dataset = NWFPressureMap(generator=dataset_generator)
+            eval_dataset = ThreePointUVVelo(generator=dataset_generator)
             eval_dataloader = DataLoader(
                 eval_dataset, batch_size=controller.batch_size)
 
@@ -77,7 +79,7 @@ if __name__ == "__main__":
             eval_loss = 0
             with torch.no_grad():
                 for feature, truth in eval_dataloader:
-                    feature = feature.to(device)
+                    feature = feature.to(device).to(torch.float32)
                     truth = truth.to(device).to(torch.float32)
                     pred = net(feature)
                     loss = float(loss_func(pred, truth))

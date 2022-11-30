@@ -16,7 +16,6 @@ class BaseNWFDataset(Dataset):
             generator.truth_path)
 
         self.__len = len(self.features)
-        self.__truth_size = len(self.features[0])
 
     @property
     def feature_names(self) -> list:
@@ -38,9 +37,9 @@ class BaseNWFDataset(Dataset):
                 "dataset fileが見つかりません。path: {} cwd: {}".format(
                     path, os.getcwd()))
         return (
-            open(path).readline().strip().split(","),
+            open(path).readline().strip().split(",")[1:],
             list(map(
-                lambda l: l.strip().split(",")[1:],
+                lambda line: line.strip().split(",")[1:],
                 open(path).readlines()[1:])
             )
         )

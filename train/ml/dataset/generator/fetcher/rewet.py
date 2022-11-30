@@ -31,7 +31,7 @@ class ThereePointUVFetcher(Fetcher):
         super().__init__(target_year, forecast_timedelta, mode)
 
     def conv_record(self, record: list) -> list:
-        next_record = [record[0]]
+        next_record = []
         next_record.extend(self.__conv_datetime(record[0]))
         next_record.extend(self.__conv_uv(record[1], record[2]))
         next_record.extend(self.__conv_uv(record[3], record[4]))
@@ -43,7 +43,8 @@ class ThereePointUVFetcher(Fetcher):
     def __conv_datetime(
         self, record_time: str
     ) -> tuple[float, float, float, float]:
-        dt = datetime.datetime.strptime(record_time, "%Y-%m-%d %H:%M")
+        # datetimeは欠損値がない前提
+        dt = datetime.datetime.strptime(record_time, "%Y-%m-%d %H:%M:%S")
         manth_rad = dt.month / 12 * 2 * math.pi
         hour_rad = dt.hour / 24 * 2 * math.pi
 
@@ -55,17 +56,23 @@ class ThereePointUVFetcher(Fetcher):
         )
 
     def __conv_uv(
-        self, velocity: float, direction: int
+        self, velocity: float | None, direction: int | None
     ) -> tuple[float, float]:
+        if velocity is None or direction is None:
+            return None, None
+
         if direction == 0:
-            return velocity
+            return None, None
 
         rad = 2 * math.pi * (direction - 1) / 16
         return math.sin(rad), math.cos(rad)
 
     def __conv_wave_class(
-        self, height: float, period: float
+        self, height: float | None, period: float | None
     ) -> tuple[int, int]:
+        if height is None or period is None:
+            return None, None
+
         is_surge = 1 if 4 * height + 2 < period else 0
         is_wind_wave = 0 if is_surge else 1
         return is_surge, is_wind_wave
@@ -78,7 +85,7 @@ class ThereePointUVFetcher(Fetcher):
 SELECT *
 FROM
 (
-    SELECT datetime(ukb.datetime, '-{target_year} hours') as datetime,
+    SELECT datetime(ukb.datetime, '-{forecast_timedelta} hours') as datetime,
         ukb.velocity,
         ukb_direction.direction,
         kix.velocity,
@@ -111,6 +118,6 @@ FROM
 )
 WHERE
     datetime between '2016' and '2020'
-    AND strftime("%Y", datetime) {operator} '{forecast_timedelta}'
+    AND strftime("%Y", datetime) {operator} '{target_year}'
 ;
 """
