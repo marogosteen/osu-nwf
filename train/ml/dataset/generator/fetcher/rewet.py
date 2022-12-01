@@ -4,21 +4,24 @@ import math
 from ml.dataset.generator.fetcher.base_fetcher import Fetcher
 
 
-class ThereePointUVFetcher(Fetcher):
+class ThereePointBase(Fetcher):
     header = [
         "datetime",
         "month_sin",
         "month_cos",
         "hour_sin",
         "hour_cos",
-        "ukb_u",
-        "ukb_v",
-        "kix_u",
-        "kix_v",
-        "tomogashima_u",
-        "tomogashima_v",
-        "surge",
-        "wind_wave",
+        "ukb_velocity",
+        "ukb_sin_direction",
+        "ukb_cos_direction",
+        "kix_velocity",
+        "kix_sin_direction",
+        "kix_cos_direction",
+        "tomogashima_velocity",
+        "tomogashima_sin_direction",
+        "tomogashima_cos_direction",
+        "is_surge",
+        "is_wind_wave",
         "temperature",
         "pressure",
         "wave_height",
@@ -32,15 +35,15 @@ class ThereePointUVFetcher(Fetcher):
 
     def conv_record(self, record: list) -> list:
         next_record = []
-        next_record.extend(self.__conv_datetime(record[0]))
-        next_record.extend(self.__conv_uv(record[1], record[2]))
-        next_record.extend(self.__conv_uv(record[3], record[4]))
-        next_record.extend(self.__conv_uv(record[5], record[6]))
-        next_record.extend(self.__conv_wave_class(record[-2], record[-1]))
+        next_record.extend(self.conv_datetime(record[0]))
+        next_record.extend(self.conv_wind(record[1], record[2]))
+        next_record.extend(self.conv_wind(record[3], record[5]))
+        next_record.extend(self.conv_wind(record[5], record[6]))
+        next_record.extend(self.conv_wave_class(record[-2], record[-1]))
         next_record.extend(record[7:])
         return next_record
 
-    def __conv_datetime(
+    def conv_datetime(
         self, record_time: str
     ) -> tuple[float, float, float, float]:
         # datetimeは欠損値がない前提
@@ -55,21 +58,21 @@ class ThereePointUVFetcher(Fetcher):
             math.cos(hour_rad)
         )
 
-    def __conv_uv(
+    def conv_wind(
         self, velocity: float | None, direction: int | None
-    ) -> tuple[float, float]:
-        if velocity is None or direction is None:
-            return None, None
+    ) -> tuple[float | None, float | None, float | None]:
+        if direction is None:
+            return velocity, None, None
 
         if direction == 0:
-            return None, None
+            return velocity, 0, 0
 
         rad = 2 * math.pi * (direction - 1) / 16
-        return math.sin(rad), math.cos(rad)
+        return velocity, math.sin(rad), math.cos(rad)
 
-    def __conv_wave_class(
+    def conv_wave_class(
         self, height: float | None, period: float | None
-    ) -> tuple[int, int]:
+    ) -> tuple[int | None, int | None]:
         if height is None or period is None:
             return None, None
 
@@ -121,3 +124,54 @@ WHERE
     AND strftime("%Y", datetime) {operator} '{target_year}'
 ;
 """
+
+
+class ThereePointUV(ThereePointBase):
+    header = [
+        "datetime",
+        "month_sin",
+        "month_cos",
+        "hour_sin",
+        "hour_cos",
+        "ukb_u",
+        "ukb_v",
+        "kix_u",
+        "kix_v",
+        "tomogashima_u",
+        "tomogashima_v",
+        "is_surge",
+        "is_wind_wave",
+        "temperature",
+        "pressure",
+        "wave_height",
+        "wave_period"
+    ]
+
+    def __init__(
+        self, target_year: int, forecast_timedelta: int, mode: str
+    ) -> None:
+        super().__init__(target_year, forecast_timedelta, mode)
+
+    def conv_record(self, record: list) -> list:
+        next_record = []
+        next_record.extend(self.conv_datetime(record[0]))
+        next_record.extend(self.conv_uv(record[1], record[2]))
+        next_record.extend(self.conv_uv(record[3], record[4]))
+        next_record.extend(self.conv_uv(record[5], record[6]))
+        next_record.extend(super().conv_wave_class(record[-2], record[-1]))
+        next_record.extend(record[7:])
+        return next_record
+
+    def conv_uv(
+        self, velocity: float | None, direction: int | None
+    ) -> tuple[float, float]:
+        if velocity is None or direction is None:
+            return None, None
+
+        if direction == 0:
+            return 0, 0
+
+        rad = 2 * math.pi * (direction - 1) / 16
+        u = velocity * math.cos(rad)
+        v = velocity * math.sin(rad)
+        return u, v

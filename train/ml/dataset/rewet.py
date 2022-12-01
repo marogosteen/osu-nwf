@@ -9,7 +9,7 @@ from ml.dataset.base_dataset import BaseNWFDataset
 from ml.dataset.generator import DatasetGenerator
 
 
-class ThreePointUVVelo(BaseNWFDataset):
+class Rewet(BaseNWFDataset):
     def __init__(self, generator: DatasetGenerator) -> None:
         super().__init__(generator)
 

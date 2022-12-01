@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 
 from ml.dataset import Rewet
 from ml.dataset.generator import DatasetGenerator
-from ml.dataset.generator.fetcher.rewet import ThereePointUV
+from ml.dataset.generator.fetcher.rewet import ThereePointBase
 from ml.dataset.generator.fetcher.wave import WaveHeightFetcher
 from ml.net import NWFNet
 from ml.train_controller import TrainController
@@ -15,8 +15,8 @@ from services.trainreport_writeservice import TrainReportWriteService
 if __name__ == "__main__":
     for forecast_timedelta in [1, 3, 6, 9, 12]:
         for year in [2016, 2017, 2018, 2019]:
-            datasetname = "rewet/three_point_uv/height/{}hourlater/{}".format(
-                forecast_timedelta, year)
+            datasetname = "rewet/three_point_base/height/{}hourlater/{}"\
+                .format(forecast_timedelta, year)
             print(datasetname)
 
             report_service = TrainReportWriteService(
@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
             dataset_generator = DatasetGenerator(
                 dataset_dir=datasetname,
-                feature_fetcher=ThereePointUV(year, 0, "train"),
+                feature_fetcher=ThereePointBase(year, 0, "train"),
                 truth_fetcher=WaveHeightFetcher(
                     year, forecast_timedelta, "train"),
                 mode="train"
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
             dataset_generator = DatasetGenerator(
                 dataset_dir=datasetname,
-                feature_fetcher=ThereePointUV(
+                feature_fetcher=ThereePointBase(
                     year, 0, "eval"),
                 truth_fetcher=WaveHeightFetcher(
                     year, forecast_timedelta, "eval"),
