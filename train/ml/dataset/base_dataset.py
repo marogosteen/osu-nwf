@@ -39,7 +39,7 @@ class BaseNWFDataset(Dataset):
         return (
             open(path).readline().strip().split(",")[1:],
             list(map(
-                lambda line: line.strip().split(",")[1:],
+                lambda line: line.strip().split(","),
                 open(path).readlines()[1:])
             )
         )
