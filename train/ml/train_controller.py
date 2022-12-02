@@ -11,8 +11,6 @@ from torchvision import models
 class TrainController:
     epochs = 1000
     batch_size = 256
-    max_endure = 10
-    learning_rate = 0.01
     schedule_gamma = 0.9
 
     def __init__(
@@ -20,16 +18,21 @@ class TrainController:
         train_dataset: BaseNWFDataset,
         device: str,
         net: models.DenseNet,
-        lossfunc: torch.nn.Module
+        lossfunc: torch.nn.Module,
+        learning_rate: float = 0.01,
+        max_endure: int = 10,
     ):
         self.__device = device
         self.__train_dataset = train_dataset
         self.__net = net
+        self.__lossfunc = lossfunc
+        self.max_endure = max_endure
+        self.learning_rate = learning_rate
+
         self.__optimizer = torch.optim.Adam(
             net.parameters(), lr=self.learning_rate)
         self.__scheduler = torch.optim.lr_scheduler.ExponentialLR(
             self.__optimizer, gamma=self.schedule_gamma)
-        self.__lossfunc = lossfunc
 
     def train_model(self) -> tuple[models.DenseNet, list, dict]:
         print("traning model...")
