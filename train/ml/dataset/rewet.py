@@ -6,11 +6,11 @@ import torch
 from torchvision import transforms
 
 from ml.dataset.base_dataset import BaseNWFDataset
-from ml.dataset.generator import DatasetGenerator
+from ml.dataset.generator import DatasetGeneratorBase
 
 
 class Rewet(BaseNWFDataset):
-    def __init__(self, generator: DatasetGenerator) -> None:
+    def __init__(self, generator: DatasetGeneratorBase) -> None:
         super().__init__(generator)
 
         feature_array = np.array(self.features)[:, 1:].astype(float)
@@ -18,9 +18,6 @@ class Rewet(BaseNWFDataset):
         std = torch.from_numpy(feature_array.std(axis=0))
         self.__transforms = transforms.Lambda(
             lambda feature: (feature - mean) / std)
-
-    def __len__(self) -> int:
-        return super().__len__()
 
     def __getitem__(
         self, idx: int
