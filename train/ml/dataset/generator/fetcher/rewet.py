@@ -1,10 +1,10 @@
 import datetime
 import math
 
-from ml.dataset.generator.fetcher.base_fetcher import Fetcher
+from ml.dataset.generator.fetcher import FetcherBase
 
 
-class ThereePointBase(Fetcher):
+class ThereePointBase(FetcherBase):
     header = [
         "datetime",
         "month_sin",

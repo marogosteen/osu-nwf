@@ -1,15 +1,15 @@
 import os
 
 import infrastructure
-from ml.dataset.generator.fetcher import Fetcher
+from ml.dataset.generator.fetcher import FetcherBase
 
 
 class DatasetGenerator:
     def __init__(
         self,
         dataset_dir: str,
-        feature_fetcher: Fetcher,
-        truth_fetcher: Fetcher,
+        feature_fetcher: FetcherBase,
+        truth_fetcher: FetcherBase,
         mode: str
     ) -> None:
         if not (mode == "train" or mode == "eval"):

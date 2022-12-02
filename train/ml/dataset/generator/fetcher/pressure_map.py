@@ -1,10 +1,10 @@
 import os
 
 import infrastructure
-from ml.dataset.generator.fetcher import Fetcher
+from ml.dataset.generator.fetcher import FetcherBase
 
 
-class PressureImagePathFetcher(Fetcher):
+class PressureImagePathFetcher(FetcherBase):
     header = ["datetime", "image_path"]
 
     def __init__(

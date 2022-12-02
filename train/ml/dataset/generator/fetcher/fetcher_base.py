@@ -1,9 +1,10 @@
+from abc import ABCMeta, abstractmethod
 import sqlite3
 
 import infrastructure
 
 
-class Fetcher:
+class FetcherBase(metaclass=ABCMeta):
     header = []
 
     def __init__(
@@ -16,6 +17,7 @@ class Fetcher:
         self.__corsor = self.__db.cursor().execute(
             self.query(target_year, forecast_timedelta, mode))
 
+    @abstractmethod
     def conv_record(self, record: list) -> list:
         pass
 
@@ -31,6 +33,7 @@ class Fetcher:
         weather_values = list(map(self.conv_record, records))
         return record_times, weather_values
 
+    @abstractmethod
     def query(
         self, target_year: int, forecast_timedelta: int, mode: str
     ) -> str:

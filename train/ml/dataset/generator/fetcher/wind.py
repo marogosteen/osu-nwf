@@ -1,7 +1,7 @@
-from ml.dataset.generator.fetcher.base_fetcher import Fetcher
+from ml.dataset.generator.fetcher import FetcherBase
 
 
-class WindDirectionFetcher(Fetcher):
+class WindDirectionFetcher(FetcherBase):
     header = [
         "datetime", "ukb_direction", "kix_direction", "tomogashima_direction"]
 
@@ -54,7 +54,7 @@ WHERE
 """
 
 
-class WindVelocityFetcher(Fetcher):
+class WindVelocityFetcher(FetcherBase):
     header = [
         "datetime", "ukb_direction", "kix_direction", "tomogashima_direction"]
 
@@ -96,7 +96,7 @@ WHERE
 """
 
 
-class WindVelocityClassFetcher(Fetcher):
+class WindVelocityClassFetcher(FetcherBase):
     header = [
         "datetime", "ukb_direction", "kix_direction", "tomogashima_direction"]
 

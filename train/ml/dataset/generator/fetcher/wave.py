@@ -1,7 +1,7 @@
-from ml.dataset.generator.fetcher.base_fetcher import Fetcher
+from ml.dataset.generator.fetcher import FetcherBase
 
 
-class WaveHeightFetcher(Fetcher):
+class WaveHeightFetcher(FetcherBase):
     header = ["datetime", "height"]
 
     def __init__(
@@ -34,7 +34,7 @@ WHERE
 """
 
 
-class WaveHeightClassFetcher(Fetcher):
+class WaveHeightClassFetcher(FetcherBase):
     header = ["datetime", "wave_height_class"]
 
     def __init__(
