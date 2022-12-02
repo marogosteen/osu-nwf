@@ -23,7 +23,7 @@
             "cwd": "${cwd}/train"
         },
         {
-            "name": "train rewet three point base",
+            "name": "train retwet three point base",
             "type": "python",
             "request": "launch",
             "program": "${cwd}/train/three_point_base.py",

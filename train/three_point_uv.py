@@ -3,9 +3,9 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from ml.dataset import Rewet
+from ml.dataset import NWFRetwet
 from ml.dataset.generator import DatasetGeneratorBase
-from ml.dataset.generator.fetcher.rewet import ThereePointUV
+from ml.dataset.generator.fetcher.retwet import ThereePointUV
 from ml.dataset.generator.fetcher.wave import WaveHeightFetcher
 from ml.net import NWFNet
 from ml.train_controller import TrainController
@@ -15,7 +15,7 @@ from services.trainreport_writeservice import TrainReportWriteService
 if __name__ == "__main__":
     for forecast_timedelta in [1, 3, 6, 9, 12]:
         for year in [2016, 2017, 2018, 2019]:
-            datasetname = "rewet/three_point_uv/height/{}hourlater/{}".format(
+            datasetname = "retwet/three_point_uv/height/{}hourlater/{}".format(
                 forecast_timedelta, year)
             print(datasetname)
 
@@ -30,7 +30,7 @@ if __name__ == "__main__":
                 mode="train"
             )
 
-            train_dataset = Rewet(generator=dataset_generator)
+            train_dataset = NWFRetwet(generator=dataset_generator)
 
             device = "cuda" if torch.cuda.is_available() else "cpu"
             net = NWFNet(
@@ -64,7 +64,7 @@ if __name__ == "__main__":
                 mode="eval"
             )
 
-            eval_dataset = Rewet(generator=dataset_generator)
+            eval_dataset = NWFRetwet(generator=dataset_generator)
             eval_dataloader = DataLoader(
                 eval_dataset, batch_size=controller.batch_size)
 

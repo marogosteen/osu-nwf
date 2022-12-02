@@ -1,5 +1,5 @@
 from . import generator
 from .pressure_map import NWFPressureMap
-from .rewet import Rewet
+from .retwet import NWFRetwet
 
-__all__ = ["generator", "NWFPressureMap", "Rewet"]
+__all__ = ["generator", "NWFPressureMap", "NWFRetwet"]

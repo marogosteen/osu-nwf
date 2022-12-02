@@ -1,5 +1,5 @@
 """
-REWET is real time weather table dataset.
+RETWET is real time weather table dataset.
 """
 import numpy as np
 import torch
@@ -9,7 +9,7 @@ from ml.dataset.base_dataset import BaseNWFDataset
 from ml.dataset.generator import DatasetGeneratorBase
 
 
-class Rewet(BaseNWFDataset):
+class NWFRetwet(BaseNWFDataset):
     def __init__(self, generator: DatasetGeneratorBase) -> None:
         super().__init__(generator)
 
