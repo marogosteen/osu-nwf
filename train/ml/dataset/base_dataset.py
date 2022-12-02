@@ -2,11 +2,11 @@ import os
 
 from torch.utils.data import Dataset
 
-from ml.dataset.generator import DatasetGenerator
+from ml.dataset.generator import DatasetGeneratorBase
 
 
 class BaseNWFDataset(Dataset):
-    def __init__(self, generator: DatasetGenerator) -> None:
+    def __init__(self, generator: DatasetGeneratorBase) -> None:
         super().__init__()
 
         generator.generate()

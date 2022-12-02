@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from ml.dataset import Rewet
-from ml.dataset.generator import DatasetGenerator
+from ml.dataset.generator import DatasetGeneratorBase
 from ml.dataset.generator.fetcher.rewet import ThereePointUV
 from ml.dataset.generator.fetcher.wave import WaveHeightFetcher
 from ml.net import NWFNet
@@ -22,7 +22,7 @@ if __name__ == "__main__":
             report_service = TrainReportWriteService(
                 reportname=datasetname, target_year=year)
 
-            dataset_generator = DatasetGenerator(
+            dataset_generator = DatasetGeneratorBase(
                 dataset_dir=datasetname,
                 feature_fetcher=ThereePointUV(year, 0, "train"),
                 truth_fetcher=WaveHeightFetcher(
@@ -55,7 +55,7 @@ if __name__ == "__main__":
             else:
                 net.load_state_dict(torch.load(state_dict_path))
 
-            dataset_generator = DatasetGenerator(
+            dataset_generator = DatasetGeneratorBase(
                 dataset_dir=datasetname,
                 feature_fetcher=ThereePointUV(
                     year, 0, "eval"),

@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from torchvision import models
 
 from ml.dataset import NWFPressureMap
-from ml.dataset.generator import DatasetGenerator
+from ml.dataset.generator import DatasetGeneratorBase
 from ml.dataset.generator.fetcher.pressure_map import PressureImagePathFetcher
 from ml.dataset.generator.fetcher.wave import WaveHeightFetcher
 from ml.losses.wave.height import WaveHeightLoss
@@ -23,7 +23,7 @@ if __name__ == "__main__":
             report_service = TrainReportWriteService(
                 reportname=datasetname, target_year=year)
 
-            dataset_generator = DatasetGenerator(
+            dataset_generator = DatasetGeneratorBase(
                 dataset_dir=datasetname,
                 feature_fetcher=PressureImagePathFetcher(year, 0, "train"),
                 truth_fetcher=WaveHeightFetcher(
@@ -55,7 +55,7 @@ if __name__ == "__main__":
             else:
                 net.load_state_dict(torch.load(state_dict_path))
 
-            dataset_generator = DatasetGenerator(
+            dataset_generator = DatasetGeneratorBase(
                 dataset_dir=datasetname,
                 feature_fetcher=PressureImagePathFetcher(year, 0, "eval"),
                 truth_fetcher=WaveHeightFetcher(

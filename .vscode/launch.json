@@ -23,10 +23,10 @@
             "cwd": "${cwd}/train"
         },
         {
-            "name": "train rewet three point uv",
+            "name": "train rewet three point base",
             "type": "python",
             "request": "launch",
-            "program": "${cwd}/train/three_point_uv.py",
+            "program": "${cwd}/train/three_point_base.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "cwd": "${cwd}/train"
