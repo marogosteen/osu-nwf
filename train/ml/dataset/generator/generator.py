@@ -4,7 +4,7 @@ import infrastructure
 from ml.dataset.generator.fetcher import FetcherBase
 
 
-class DatasetGeneratorBase:
+class DatasetGenerator:
     def __init__(
         self,
         dataset_dir: str,
