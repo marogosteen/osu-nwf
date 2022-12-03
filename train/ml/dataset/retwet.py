@@ -5,11 +5,11 @@ import numpy as np
 import torch
 from torchvision import transforms
 
-from ml.dataset.base_dataset import BaseNWFDataset
+from ml.dataset.dataset_base import NWFDatasetBase
 from ml.dataset.generator import DatasetGenerator
 
 
-class NWFRetwet(BaseNWFDataset):
+class NWFRetwet(NWFDatasetBase):
     def __init__(self, generator: DatasetGenerator) -> None:
         super().__init__(generator)
 

@@ -2,11 +2,11 @@ import torch
 from PIL import Image
 from torchvision import transforms
 
-from ml.dataset.base_dataset import BaseNWFDataset
+from ml.dataset.dataset_base import NWFDatasetBase
 from ml.dataset.generator import DatasetGenerator
 
 
-class NWFPressureMap(BaseNWFDataset):
+class NWFPressureMap(NWFDatasetBase):
     def __init__(self, generator: DatasetGenerator) -> None:
         super().__init__(generator)
         self.__transforms = transforms.ToTensor()

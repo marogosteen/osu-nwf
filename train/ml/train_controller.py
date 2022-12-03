@@ -4,7 +4,7 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 
-from ml.dataset.base_dataset import BaseNWFDataset
+from ml.dataset.dataset_base import NWFDatasetBase
 from torchvision import models
 
 
@@ -15,7 +15,7 @@ class TrainController:
 
     def __init__(
         self,
-        train_dataset: BaseNWFDataset,
+        train_dataset: NWFDatasetBase,
         net: models.DenseNet,
         loss_func: torch.nn.Module,
         learning_rate: float = 0.01,

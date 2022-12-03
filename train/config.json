@@ -1,5 +1,5 @@
 {
-    "dataset_type": "retwet",
-    "feature_fetcher": "three_point",
-    "truth_fetcher": "wave_height"
+    "dataset_type": "",
+    "feature_fetcher": "",
+    "truth_fetcher": ""
 }

@@ -6,7 +6,7 @@ from torchvision import models
 
 from config import config
 from ml import dataset
-from ml.dataset.base_dataset import BaseNWFDataset
+from ml.dataset.dataset_base import NWFDatasetBase
 from ml.net import NWFNet
 from ml.train_controller import TrainController
 from services.trainreport_writeservice import TrainReportWriteService
@@ -34,7 +34,7 @@ def train_nwf(
         mode=mode
     )
 
-    nwf_dataset: BaseNWFDataset = nwf_config.nwf_dataset(dataset_generator)
+    nwf_dataset: NWFDatasetBase = nwf_config.nwf_dataset(dataset_generator)
     match nwf_config.dataset_type:
         case config.DatasetEnum.PRESSURE_MAP:
             net = models.DenseNet(num_classes=nwf_config.num_class)
@@ -75,7 +75,7 @@ def train_nwf(
     )
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    nwf_dataset: BaseNWFDataset = nwf_config.nwf_dataset(dataset_generator)
+    nwf_dataset: NWFDatasetBase = nwf_config.nwf_dataset(dataset_generator)
     eval_dataloader = DataLoader(
         nwf_dataset, batch_size=controller.batch_size)
     loss_func = nwf_config.loss_func()

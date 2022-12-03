@@ -5,8 +5,7 @@ import torch
 from torchvision import models
 
 from ml import dataset
-# TODO: NEFDatasetBaseに変える
-from ml.dataset.base_dataset import BaseNWFDataset
+from ml.dataset.dataset_base import NWFDatasetBase
 from ml.dataset.generator import fetcher
 from ml.dataset.generator.fetcher.fetcher_base import FetcherBase
 from ml import losses
@@ -55,7 +54,7 @@ class NWFConfig:
         return self.__dataset_type
 
     @property
-    def nwf_dataset(self) -> BaseNWFDataset:
+    def nwf_dataset(self) -> NWFDatasetBase:
         match self.__dataset_type:
             case DatasetEnum.PRESSURE_MAP:
                 return dataset.NWFPressureMap

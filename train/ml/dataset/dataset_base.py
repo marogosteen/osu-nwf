@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from ml.dataset.generator import DatasetGenerator
 
 
-class BaseNWFDataset(Dataset):
+class NWFDatasetBase(Dataset):
     def __init__(self, generator: DatasetGenerator) -> None:
         super().__init__()
 
