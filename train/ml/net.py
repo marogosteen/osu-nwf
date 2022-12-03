@@ -3,7 +3,8 @@ import torch
 
 
 class NWFNet(nn.Module):
-    def __init__(self, feature_size: int, output_size: int):
+    # WARNING: num_classはpytorch提供モデルなどの他のモデルと共通命名になっている。
+    def __init__(self, feature_size: int, num_class: int):
         super(NWFNet, self).__init__()
         self.linearSequential = nn.Sequential(
             nn.Linear(feature_size, 64),
@@ -21,7 +22,7 @@ class NWFNet(nn.Module):
             nn.Linear(32, 16),
             nn.ReLU(),
             nn.Dropout(0.3),
-            nn.Linear(16, output_size)
+            nn.Linear(16, num_class)
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

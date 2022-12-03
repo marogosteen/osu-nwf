@@ -5,28 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "train wind direction",
+            "name": "train",
             "type": "python",
             "request": "launch",
-            "program": "${cwd}/train/wind_direction.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "cwd": "${cwd}/train"
-        },
-        {
-            "name": "train wave height",
-            "type": "python",
-            "request": "launch",
-            "program": "${cwd}/train/wave_height.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "cwd": "${cwd}/train"
-        },
-        {
-            "name": "train retwet three point base",
-            "type": "python",
-            "request": "launch",
-            "program": "${cwd}/train/three_point_base.py",
+            "program": "${cwd}/train/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "cwd": "${cwd}/train"
