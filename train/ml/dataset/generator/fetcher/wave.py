@@ -1,4 +1,4 @@
-from ml.dataset.generator.fetcher import FetcherBase
+from ml.dataset.generator.fetcher.fetcher_base import FetcherBase
 
 
 class WaveHeightFetcher(FetcherBase):

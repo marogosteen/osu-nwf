@@ -1,10 +1,10 @@
 import datetime
 import math
 
-from ml.dataset.generator.fetcher import FetcherBase
+from ml.dataset.generator.fetcher.fetcher_base import FetcherBase
 
 
-class ThereePointBase(FetcherBase):
+class ThereePoint(FetcherBase):
     header = [
         "datetime",
         "month_sin",
@@ -126,7 +126,7 @@ WHERE
 """
 
 
-class ThereePointUV(ThereePointBase):
+class ThereePointUV(ThereePoint):
     header = [
         "datetime",
         "month_sin",

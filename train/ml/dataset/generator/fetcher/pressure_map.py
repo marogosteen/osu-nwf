@@ -1,7 +1,7 @@
 import os
 
 import infrastructure
-from ml.dataset.generator.fetcher import FetcherBase
+from ml.dataset.generator.fetcher.fetcher_base import FetcherBase
 
 
 class PressureImagePathFetcher(FetcherBase):
