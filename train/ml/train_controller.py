@@ -11,7 +11,7 @@ from torchvision import models
 class TrainController:
     epochs = 1000
     batch_size = 256
-    schedule_gamma = 0.9
+    schedule_gamma = 0.8
 
     def __init__(
         self,
