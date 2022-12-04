@@ -46,13 +46,14 @@ def train_nwf(
         case name:
             raise ValueError(f"not match net ({name}).")
 
+    controller = TrainController(
+        train_dataset=nwf_dataset,
+        net=net,
+        loss_func=nwf_config.loss_func()
+    )
+
     state_dict_path = report_service.state_dict_path()
     if not os.path.exists(state_dict_path):
-        controller = TrainController(
-            train_dataset=nwf_dataset,
-            net=net,
-            loss_func=nwf_config.loss_func()
-        )
         net, loss_history, state_dict = controller.train_model()
 
         report_service.state_dict(state_dict)
@@ -107,6 +108,7 @@ def train_nwf(
 if __name__ == "__main__":
     nwf_config = config.NWFConfig()
 
-    for forecast_time_delta in [1, 3, 6, 9, 12]:
+    # for forecast_time_delta in [1, 3, 6, 9, 12]:
+    for forecast_time_delta in [6, 9, 12]:
         for year in [2016, 2017, 2018, 2019]:
             train_nwf(forecast_time_delta, year, nwf_config)
