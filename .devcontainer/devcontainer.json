@@ -19,5 +19,19 @@
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
 
-	"runArgs": ["--gpus", "all", "--shm-size=16gb"]
+	"runArgs": ["--gpus", "all", "--shm-size=16gb"],
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"janisdd.vscode-edit-csv",
+				"mhutchie.git-graph",
+				"oderwat.indent-rainbow",
+				"VisualStudioExptTeam.vscodeintellicode",
+				"VisualStudioExptTeam.intellicode-api-usage-examples",
+				"christian-kohler.path-intellisense",
+				"wayou.vscode-todo-highlight"
+			]
+		}
+	}
 }
