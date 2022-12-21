@@ -33,6 +33,9 @@ def conv_pix_index(points: np.ndarray) -> np.ndarray:
 
 def get_power_maps():
     """各観測点における圧力の勢力Mapを返す"""
+    geo_points = np.array(cursor.execute(
+        open(STATION_POINTS_QUERY_PATH).read()
+    ).fetchall())
     pix_points = conv_pix_index(geo_points)
     observed_count = len(pix_points)
     yy_ = np.repeat(np.arange(Y_GRID_SIZE).reshape(-1, 1), X_GRID_SIZE, axis=1)
@@ -89,13 +92,10 @@ db = sqlite3.connect(DBPATH)
 cursor = db.cursor()
 xx, yy = np.meshgrid(range(X_GRID_SIZE), range(Y_GRID_SIZE))
 
-geo_points = np.array(cursor.execute(
-    open(STATION_POINTS_QUERY_PATH).read()
-).fetchall())
-
 power_maps = get_power_maps()
+power_maps = power_maps[:, int(Y_GRID_SIZE / 3):, :int(X_GRID_SIZE / 3 * 2)]
 cursor = cursor.execute(open(PRESSURES_QUERY_PATH).read())
-observed_count = len(geo_points)
+observed_count = len(power_maps)
 err_threshold = observed_count // 2
 colormap = cm.get_cmap("turbo")
 print("now generating ...")
