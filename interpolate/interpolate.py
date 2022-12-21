@@ -97,8 +97,8 @@ cursor = cursor.execute(open(PRESSURES_QUERY_PATH).read())
 observed_count = len(geo_points)
 err_threshold = observed_count // 2
 colormap = cm.get_cmap("turbo")
+print("now generating ...")
 while True:
-    print("now generating ...")
     press_records: list[list[str]] = cursor.fetchmany(5000)
     if not press_records:
         break
