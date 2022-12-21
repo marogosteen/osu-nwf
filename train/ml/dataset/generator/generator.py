@@ -95,8 +95,7 @@ class DatasetGenerator:
 
         self.__feature_file.close()
         self.__truth_file.close()
-        print("generate complete! ({}, {})".format(
-            self.__feature_path, self.__truth_path))
+        print("generate complete!")
 
     def is_generated(self) -> bool:
         return os.path.exists(
