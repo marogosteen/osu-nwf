@@ -16,7 +16,7 @@ class PressureImagePathFetcher(FetcherBase):
         record_time: str = record[0]
         image_path = record_time.replace("-", "/").replace(
             " ", "/").replace(":", "")
-        image_path += ".jpg"
+        image_path += ".png"
         image_path = os.path.join(
             infrastructure.IMAGEDIR, image_path)
         if not os.path.exists(image_path):

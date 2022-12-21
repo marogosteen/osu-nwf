@@ -10,7 +10,7 @@ from torchvision import models
 
 class TrainController:
     __epochs = 1000
-    __batch_size = 256
+    __batch_size = 128
     __schedule_gamma = 0.8
 
     def __init__(
