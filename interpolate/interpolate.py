@@ -53,9 +53,8 @@ def get_power_maps():
         with np.errstate(divide="ignore"):
             grads = - 1 / (point_diffs[:, 0] / point_diffs[:, 1])
         slicies = pix_points[other_ids, 0] - grads * pix_points[other_ids, 1]
-
-        is_grad_inf = grads == -np.inf
-        grads[is_grad_inf], slicies[is_grad_inf] = 0, 0
+        is_y_diff_zero = point_diffs[:, 0] == 0
+        grads[is_y_diff_zero], slicies[is_y_diff_zero] = 0, 0
 
         borders = np.repeat(
             np.arange(X_GRID_SIZE).reshape(1, -1), observed_count-1, axis=0
@@ -99,6 +98,7 @@ observed_count = len(geo_points)
 err_threshold = observed_count // 2
 colormap = cm.get_cmap("turbo")
 while True:
+    print("now generating ...")
     press_records: list[list[str]] = cursor.fetchmany(5000)
     if not press_records:
         break
@@ -137,3 +137,5 @@ while True:
         if img_num == 100:
             print("\r"+write_path, end="")
             img_num = 0
+
+print("done.")
