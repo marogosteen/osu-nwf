@@ -1,8 +1,10 @@
+import datetime
+import os
 import sqlite3
-import numpy as np
-from PIL import Image
-from matplotlib import cm
 
+import numpy as np
+from matplotlib import cm
+from PIL import Image
 
 NUM_NEED_ARG = 1
 UINT8 = 255
@@ -96,6 +98,7 @@ geo_points = np.array(cursor.execute(
 power_maps = get_power_maps()
 cursor = cursor.execute(open(PRESSURES_QUERY_PATH).read())
 observed_count = len(geo_points)
+err_threshold = observed_count // 2
 colormap = cm.get_cmap("jet")
 while True:
     press_records: list[list[str]] = cursor.fetchmany(5000)
@@ -104,10 +107,23 @@ while True:
 
     for record in press_records:
         press_map_pairts = power_maps.copy()
+
+        record_time = datetime.datetime.strptime(record[0], RECORD_PATTERN)
+        write_path = os.path.join(
+            IMAGE_DIR, record_time.strftime(FILENAME_PATTERN)+".png"
+        )
+
         pressures = np.array(list(map(
             lambda pressure: float(pressure) if pressure else None,
             record[1].split(",")
         )), dtype=float).reshape(observed_count, 1, 1)
+
+        if np.isnan(pressures).sum() > err_threshold:
+            msg = "欠損値が半数以上で、画像化できません。record time: {}".format(
+                record_time.strftime(RECORD_PATTERN)
+            )
+            raise RuntimeError(msg)
+
         press_map_pairts *= pressures
         press_map = press_map_pairts.sum(axis=0)
 
@@ -115,7 +131,7 @@ while True:
         press_map = 255 * colormap((press_map - MIN_PRESSURE) / MAX_PRESSURE)
         press_map = press_map.astype(np.uint8)
         pil_img = Image.fromarray(press_map)
-        pil_img.save("images/proto_press.png", quolity=100)
+        pil_img.save(write_path, quolity=100)
 
         # debug
         break
