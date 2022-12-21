@@ -1,6 +1,7 @@
 import sqlite3
 import numpy as np
 from PIL import Image
+from matplotlib import cm
 
 
 NUM_NEED_ARG = 1
@@ -13,6 +14,8 @@ IMAGE_DIR = "../assets/pressure_images_test"
 DBPATH = "../assets/weather.sqlite"
 RECORD_PATTERN = "%Y-%m-%d %H:%M"
 FILENAME_PATTERN = "%Y/%m/%d/%H%M"
+STATION_POINTS_QUERY_PATH = "./query/station_coodinates.sql"
+PRESSURES_QUERY_PATH = "./query/pressures_per_hour.sql"
 
 
 def conv_pix_index(points: np.ndarray) -> np.ndarray:
@@ -36,7 +39,6 @@ def get_power_maps():
         # debug:
         if main_id == 2:
             pass
-
 
         x_distance = np.abs(xx - pix_points[main_id, 1])
         y_distance = np.abs(yy - pix_points[main_id, 0])
@@ -70,7 +72,7 @@ def get_power_maps():
 
         is_negative = (point_diffs[:, 0] < 0)
         if is_negative.sum() > 0:
-            over_border =np.repeat(
+            over_border = np.repeat(
                 np.min(borders[is_negative], axis=0).reshape(1, -1),
                 Y_GRID_SIZE,
                 axis=0
@@ -88,13 +90,13 @@ cursor = db.cursor()
 xx, yy = np.meshgrid(range(X_GRID_SIZE), range(Y_GRID_SIZE))
 
 geo_points = np.array(cursor.execute(
-    open("./query/station_coodinates.sql").read()
+    open(STATION_POINTS_QUERY_PATH).read()
 ).fetchall())
 
 power_maps = get_power_maps()
-cursor = cursor.execute(open("./query/pressures_per_hour.sql").read())
+cursor = cursor.execute(open(PRESSURES_QUERY_PATH).read())
 observed_count = len(geo_points)
-# colormap = cm.get_cmap("jet")
+colormap = cm.get_cmap("jet")
 while True:
     press_records: list[list[str]] = cursor.fetchmany(5000)
     if not press_records:
@@ -102,23 +104,18 @@ while True:
 
     for record in press_records:
         press_map_pairts = power_maps.copy()
-        press_list = list(map(
+        pressures = np.array(list(map(
             lambda pressure: float(pressure) if pressure else None,
             record[1].split(",")
-        ))
-
-        for idx in range(observed_count):
-            press_map_pairts[idx] *= press_list[idx]
-
+        )), dtype=float).reshape(observed_count, 1, 1)
+        press_map_pairts *= pressures
         press_map = press_map_pairts.sum(axis=0)
-        press_map = press_map[-1::-1]
 
-        press_map = 255 * (press_map - press_map.min()) / (press_map - press_map.min()).max()
-        print(press_map.max(), press_map.min())
-        # press_map = 255 * (press_map - MIN_PRESSURE) / MAX_PRESSURE
+        press_map = press_map[-1::-1]
+        press_map = 255 * colormap((press_map - MIN_PRESSURE) / MAX_PRESSURE)
         press_map = press_map.astype(np.uint8)
         pil_img = Image.fromarray(press_map)
-        pil_img.save("images/proto_press.jpg", quolity=100)
+        pil_img.save("images/proto_press.png", quolity=100)
 
         # debug
         break
