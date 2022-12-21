@@ -134,8 +134,7 @@ while True:
         pil_img = Image.fromarray(press_map)
         pil_img.save(write_path, quolity=100)
 
-        if img_num == 100:
+        if img_num % 100 == 0:
             print("\r"+write_path, end="")
-            img_num = 0
 
 print("done.")
