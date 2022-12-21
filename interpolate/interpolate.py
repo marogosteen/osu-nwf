@@ -137,5 +137,6 @@ while True:
 
         if img_num % 100 == 0:
             print("\r"+write_path, end="")
+print()
 
 print("done.")
