@@ -12,6 +12,7 @@ Y_GRID_SIZE = 500
 X_GRID_SIZE = 400
 MIN_PRESSURE = 955
 MAX_PRESSURE = 1060
+PRESSURE_RANGE = MAX_PRESSURE - MIN_PRESSURE
 WRITE_IMAGE_DIR = "../assets/pressure_images"
 DBPATH = "../assets/weather.sqlite"
 RECORD_PATTERN = "%Y-%m-%d %H:%M"
@@ -129,7 +130,7 @@ while True:
         press_map = press_map_pairts.sum(axis=0)
 
         press_map = press_map[-1::-1]
-        press_map = 255 * colormap((press_map - MIN_PRESSURE) / MAX_PRESSURE)
+        press_map = 255 * colormap((press_map - MIN_PRESSURE) / PRESSURE_RANGE)
         press_map = press_map.astype(np.uint8)
         pil_img = Image.fromarray(press_map)
         pil_img.save(write_path, quolity=100)
