@@ -4,8 +4,9 @@ import math
 from ml.dataset.generator.fetcher.fetcher_base import FetcherBase
 
 
-class FullFeature(FetcherBase):
+class RetwetBase(FetcherBase):
     header = [
+        "datetime",
         "month_sin",
         "month_cos",
         "hour_sin",
@@ -102,32 +103,42 @@ FROM
         kix_direction.direction,
         tomogashima.velocity,
         tomogashima_direction.direction,
-        temperature.temperature,
         osaka.velocity,
         osaka_direction.direction,
         akashi.velocity,
         akashi_direction.direction,
+        temperature.temperature,
         air_pressure.air_pressure,
         wave.significant_height,
         wave.significant_period
     FROM wind AS ukb
     INNER JOIN wind AS kix ON kix.datetime == ukb.datetime
     INNER JOIN wind AS tomogashima ON tomogashima.datetime == ukb.datetime
+    INNER JOIN wind AS osaka ON osaka.datetime == ukb.datetime
+    INNER JOIN wind AS akashi ON akashi.datetime == ukb.datetime
     INNER JOIN wind_direction AS ukb_direction
         ON ukb_direction.datetime == ukb.datetime
     INNER JOIN wind_direction AS kix_direction
         ON kix_direction.datetime == ukb.datetime
     INNER JOIN wind_direction AS tomogashima_direction
         ON tomogashima_direction.datetime == ukb.datetime
+    INNER JOIN wind_direction AS osaka_direction
+        ON osaka_direction.datetime == ukb.datetime
+    INNER JOIN wind_direction AS akashi_direction
+        ON akashi_direction.datetime == ukb.datetime
     INNER JOIN temperature ON temperature.datetime == ukb.datetime
     INNER JOIN air_pressure ON air_pressure.datetime == ukb.datetime
     INNER JOIN wave ON wave.datetime == ukb.datetime
     WHERE ukb.place == "ukb"
         AND kix.place == "kix"
         AND tomogashima.place == "tomogashima"
+        AND osaka.place == "osaka"
+        AND akashi.place == "akashi"
         AND ukb_direction.amedas_station == 879
         AND kix_direction.amedas_station == 855
         AND tomogashima_direction.amedas_station == 899
+        AND osaka_direction.amedas_station == 850
+        AND akashi_direction.amedas_station == 878
         AND air_pressure.amedas_station == 880
 )
 WHERE
@@ -139,6 +150,7 @@ WHERE
 
 class ThereePoint(FetcherBase):
     header = [
+        "datetime",
         "month_sin",
         "month_cos",
         "hour_sin",
@@ -260,6 +272,7 @@ WHERE
 
 class ThereePointUV(ThereePoint):
     header = [
+        "datetime",
         "month_sin",
         "month_cos",
         "hour_sin",

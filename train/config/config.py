@@ -18,6 +18,7 @@ class DatasetEnum:
 
 
 class FetcherEnum:
+    RETWET_BASE = "retwet_base"
     THREE_POINT_BASE = "three_point"
     THREE_POINT_UV = "three_point_uv"
     PRESSURE_MAP = "pressure_map"
@@ -66,6 +67,8 @@ class NWFConfig:
     @property
     def feature_fetcher(self) -> FetcherBase:
         match self.__feature_fetcher:
+            case FetcherEnum.RETWET_BASE:
+                return fetcher.retwet.RetwetBase
             case FetcherEnum.THREE_POINT_BASE:
                 return fetcher.retwet.ThereePoint
             case FetcherEnum.THREE_POINT_UV:
