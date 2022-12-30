@@ -1,5 +1,6 @@
 import os
 
+import torch
 from torch.utils.data import Dataset
 
 from ml.dataset.generator import DatasetGenerator
@@ -31,6 +32,11 @@ class NWFDatasetBase(Dataset):
 
     def __len__(self) -> int:
         return self.__len
+
+    def __getitem__(
+        self, idx: int
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        pass
 
     def get_datasettimes(self) -> list[str]:
         return list(map(lambda line: line[0], self.features))
