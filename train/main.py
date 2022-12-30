@@ -20,9 +20,10 @@ def train_nwf(
         f"{forecast_time_delta}hour_later",
         str(year)
     )
+    print(dataset_name)
 
     report_service = TrainReportWriteService(
-        reportname=dataset_name, target_year=year)
+        reportname=dataset_name)
     report_service.save_config(nwf_config)
 
     mode = "train"
@@ -36,16 +37,18 @@ def train_nwf(
     )
     train_dataset: NWFDatasetBase = nwf_config.nwf_dataset(dataset_generator)
 
+    mode = "eval"
     dataset_generator = dataset.generator.DatasetGenerator(
         dataset_dir=dataset_name,
         feature_fetcher=nwf_config.feature_fetcher(year, 0, mode),
         truth_fetcher=nwf_config.truth_fetcher(
             year, forecast_time_delta, mode),
         feature_timerange=feature_timerange,
-        mode="eval"
+        mode=mode
     )
     eval_dataset: NWFDatasetBase = nwf_config.nwf_dataset(dataset_generator)
 
+    net: torch.nn.Module
     match nwf_config.dataset_type:
         case config.DatasetEnum.PRESSURE_MAP:
             net = models.DenseNet(num_classes=nwf_config.num_class)
@@ -78,7 +81,6 @@ def train_nwf(
     else:
         net.load_state_dict(torch.load(state_dict_path))
 
-    mode = "eval"
     truths, predicts, eval_loss = controller.eval()
     datetimes = train_dataset.get_datasettimes()
     report_service.save_truths(truths, datetimes)
