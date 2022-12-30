@@ -1,4 +1,3 @@
-import datetime
 import json
 import os
 
@@ -16,8 +15,9 @@ class TrainReportWriteService:
     truthfilename: str = "truth.csv"
     predfilename: str = "pred.csv"
     loss_image_filename: str = "loss_history.jpg"
+    loss_history_filename: str = "loss_history.csv"
 
-    def __init__(self, reportname: str, target_year: int) -> None:
+    def __init__(self, reportname: str) -> None:
         self.__report_dir = os.path.join(self.__report_dir, reportname)
         if not os.path.exists(self.__report_dir):
             os.makedirs(self.__report_dir)
@@ -30,6 +30,13 @@ class TrainReportWriteService:
         torch.save(state_dict, save_path)
 
     def loss_history(self, loss_history: list) -> None:
+        open(
+            os.path.join(self.__report_dir, self.loss_history_filename),
+            mode="w"
+        ).write(
+            ",\n".join(list(map(str, loss_history)))
+        )
+
         bestloss = loss_history.index(min(loss_history))+1
 
         _, ax = plt.subplots()
@@ -51,23 +58,23 @@ class TrainReportWriteService:
         json.dump(json_dict, open(save_path, mode="w"))
 
     def save_truths(
-        self, truths: list, datetimes: list[datetime.datetime]
+        self, truths: list, datetimes: list[str]
     ) -> None:
         path = os.path.join(self.__report_dir, self.truthfilename)
         with open(path, mode="w") as f:
-            for line, s in zip(truths, datetimes):
+            for line, sdt in zip(truths, datetimes):
                 line = list(map(str, line))
-                line.insert(0, s)
+                line.insert(0, sdt)
                 line = ",".join(line)+"\n"
                 f.write(line)
 
     def save_preds(
-        self, preds: list, datetimes: list[datetime.datetime]
+        self, preds: list, datetimes: list[str]
     ) -> None:
         path = os.path.join(self.__report_dir, self.predfilename)
         with open(path, mode="w") as f:
-            for line, s in zip(preds, datetimes):
+            for line, sdt in zip(preds, datetimes):
                 line = list(map(str, line))
-                line.insert(0, s)
+                line.insert(0, sdt)
                 line = ",".join(line)+"\n"
                 f.write(line)
