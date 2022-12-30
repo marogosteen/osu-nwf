@@ -12,7 +12,8 @@ from services.trainreport_writeservice import TrainReportWriteService
 
 
 def train_nwf(
-    forecast_time_delta: int, year: int, nwf_config: config.NWFConfig
+    forecast_time_delta: int, feature_timerange: int, year: int,
+    nwf_config: config.NWFConfig
 ) -> None:
     dataset_name = os.path.join(
         nwf_config.dataset_name,
@@ -30,23 +31,35 @@ def train_nwf(
         feature_fetcher=nwf_config.feature_fetcher(year, 0, mode),
         truth_fetcher=nwf_config.truth_fetcher(
             year, forecast_time_delta, mode),
+        feature_timerange=feature_timerange,
         mode=mode
     )
+    train_dataset: NWFDatasetBase = nwf_config.nwf_dataset(dataset_generator)
 
-    nwf_dataset: NWFDatasetBase = nwf_config.nwf_dataset(dataset_generator)
+    dataset_generator = dataset.generator.DatasetGenerator(
+        dataset_dir=dataset_name,
+        feature_fetcher=nwf_config.feature_fetcher(year, 0, mode),
+        truth_fetcher=nwf_config.truth_fetcher(
+            year, forecast_time_delta, mode),
+        feature_timerange=feature_timerange,
+        mode="eval"
+    )
+    eval_dataset: NWFDatasetBase = nwf_config.nwf_dataset(dataset_generator)
+
     match nwf_config.dataset_type:
         case config.DatasetEnum.PRESSURE_MAP:
             net = models.DenseNet(num_classes=nwf_config.num_class)
         case config.DatasetEnum.RETWET:
             net = NWFNet(
-                feature_size=len(nwf_dataset.feature_names),
+                feature_size=train_dataset.feature_size,
                 num_class=nwf_config.num_class
             )
         case name:
             raise ValueError(f"not match net ({name}).")
 
     controller = TrainController(
-        train_dataset=nwf_dataset,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
         net=net,
         loss_func=nwf_config.loss_func()
     )
@@ -66,18 +79,8 @@ def train_nwf(
         net.load_state_dict(torch.load(state_dict_path))
 
     mode = "eval"
-    dataset_generator = dataset.generator.DatasetGenerator(
-        dataset_dir=dataset_name,
-        feature_fetcher=nwf_config.feature_fetcher(year, 0, mode),
-        truth_fetcher=nwf_config.truth_fetcher(
-            year, forecast_time_delta, mode),
-        mode=mode
-    )
-
-    nwf_dataset: NWFDatasetBase = nwf_config.nwf_dataset(dataset_generator)
-    truths, predicts, eval_loss = controller.eval(nwf_dataset)
-
-    datetimes = nwf_dataset.get_datasettimes()
+    truths, predicts, eval_loss = controller.eval()
+    datetimes = train_dataset.get_datasettimes()
     report_service.save_truths(truths, datetimes)
     report_service.save_preds(predicts, datetimes)
 
@@ -88,5 +91,7 @@ if __name__ == "__main__":
     nwf_config = config.NWFConfig()
 
     for forecast_time_delta in [1, 3, 6, 9, 12]:
-        for year in [2016, 2017, 2018, 2019]:
-            train_nwf(forecast_time_delta, year, nwf_config)
+        for feature_timerange in [1]:
+            for year in [2016, 2017, 2018, 2019]:
+                train_nwf(
+                    forecast_time_delta, feature_timerange, year, nwf_config)

@@ -17,6 +17,11 @@ class NWFDatasetBase(Dataset):
         self.__len = len(self.features)
 
     @property
+    def feature_size(self) -> int:
+        # featuresにはdatetimeが含まれている。__getitem__がcallされるときはこれを除くので、合わせて-1する。
+        return len(self.features[0]) - 1
+
+    @property
     def feature_names(self) -> list:
         return self.__feature_names
 

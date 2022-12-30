@@ -10,6 +10,7 @@ class DatasetGenerator:
         dataset_dir: str,
         feature_fetcher: FetcherBase,
         truth_fetcher: FetcherBase,
+        feature_timerange: int,
         mode: str
     ) -> None:
         if not (mode == "train" or mode == "eval"):
@@ -23,6 +24,7 @@ class DatasetGenerator:
             dataset_dir + f"truth_{mode}.csv")
         self.__feature_fetcher = feature_fetcher
         self.__truth_fetcher = truth_fetcher
+        self.__input_timerange = feature_timerange
 
         dataset_dir = os.path.dirname(self.__feature_path)
         if not os.path.exists(dataset_dir):
@@ -74,6 +76,7 @@ class DatasetGenerator:
         self.__truth_file.write("{}\n".format(
             ",".join(self.__truth_fetcher.header)))
 
+        self.__record_buffer = []
         while True:
             record_times, features = self.__feature_fetcher.fetch_many()
             _, truths = self.__truth_fetcher.fetch_many()
@@ -87,11 +90,17 @@ class DatasetGenerator:
                 if None in feature or None in truth:
                     continue
 
-                feature_line = ",".join(map(str, feature))
-                truth_line = ",".join(map(str, truth))
+                self.__record_buffer.append(feature)
+                if len(self.__record_buffer) < self.__input_timerange:
+                    continue
 
+                feature_line = ",".join(map(
+                    str, sum(self.__record_buffer, [])
+                ))
+                truth_line = ",".join(map(str, truth))
                 self.__feature_file.write(f"{record_time},{feature_line}\n")
                 self.__truth_file.write(f"{record_time},{truth_line}\n")
+                self.__record_buffer.pop(0)
 
         self.__feature_file.close()
         self.__truth_file.close()
