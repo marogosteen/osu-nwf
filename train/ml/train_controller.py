@@ -16,13 +16,18 @@ class TrainController:
     def __init__(
         self,
         train_dataset: NWFDatasetBase,
+        eval_dataset: NWFDatasetBase,
         net: models.DenseNet,
         loss_func: torch.nn.Module,
         learning_rate: float = 0.01,
         max_endure: int = 10,
     ):
         self.__device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.__train_dataset = train_dataset
+        self.__train_dataloader = DataLoader(
+            train_dataset, batch_size=self.__batch_size, shuffle=True,
+            num_workers=os.cpu_count(), pin_memory=True)
+        self.__eval_dataloader = DataLoader(
+            eval_dataset, batch_size=self.__batch_size)
         self.__net = net.to(self.__device)
         self.__loss_func = loss_func
         self.__max_endure = max_endure
@@ -35,38 +40,33 @@ class TrainController:
 
     def train_model(self) -> tuple[models.DenseNet, list, dict]:
         print("traning model...")
-        train_dataloader = DataLoader(
-            self.__train_dataset, batch_size=self.__batch_size, shuffle=True,
-            num_workers=os.cpu_count(), pin_memory=True)
         best_state_dict = None
         best_loss = None
         loss_history = []
         endure = 0
         for _ in tqdm(range(self.__epochs)):
             self.__net.train()
-            sumloss = 0
             feature: torch.Tensor
             truth: torch.Tensor
-            for feature, truth in train_dataloader:
+            for feature, truth in self.__train_dataloader:
                 feature = feature.to(self.__device)
                 truth = truth.to(self.__device)
                 pred = self.__net(feature)
                 loss = self.__loss_func(pred, truth)
-                sumloss += float(loss) / 3.
                 self.__optimizer.zero_grad()
                 loss.backward()
                 self.__optimizer.step()
             self.__scheduler.step()
 
-            meanloss = sumloss / len(train_dataloader)
-            loss_history.append(meanloss)
+            _, _, monitor_loss = self.eval()
+            loss_history.append(monitor_loss)
 
             if not best_loss:
-                best_loss = float(meanloss)
+                best_loss = float(monitor_loss)
                 best_state_dict = self.__net.state_dict()
                 endure = 0
-            elif best_loss >= meanloss:
-                best_loss = float(meanloss)
+            elif best_loss >= monitor_loss:
+                best_loss = float(monitor_loss)
                 best_state_dict = self.__net.state_dict()
                 endure = 0
             else:
@@ -79,10 +79,7 @@ class TrainController:
         print("complete train!")
         return self.__net, loss_history, best_state_dict
 
-    def eval(self, nwf_dataset: NWFDatasetBase) -> tuple[list, list, float]:
-        eval_dataloader = DataLoader(
-            nwf_dataset, batch_size=self.__batch_size)
-
+    def eval(self) -> tuple[list, list, float]:
         truths = []
         predicts = []
         self.__net.eval()
@@ -90,7 +87,7 @@ class TrainController:
         pred: torch.Tensor
         eval_loss = 0
         with torch.no_grad():
-            for feature, truth in eval_dataloader:
+            for feature, truth in self.__eval_dataloader:
                 feature = feature.to(self.__device)
                 truth = truth.to(self.__device)
                 pred = self.__net(feature)
@@ -98,6 +95,6 @@ class TrainController:
                 eval_loss += loss
                 truths.extend(truth.tolist())
                 predicts.extend(pred.tolist())
-            eval_loss /= len(eval_dataloader)
+            eval_loss /= len(self.__eval_dataloader)
 
         return truth, pred, eval_loss
