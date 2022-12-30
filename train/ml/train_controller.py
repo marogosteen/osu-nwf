@@ -97,4 +97,4 @@ class TrainController:
                 predicts.extend(pred.tolist())
             eval_loss /= len(self.__eval_dataloader)
 
-        return truth, pred, eval_loss
+        return truths, predicts, eval_loss
