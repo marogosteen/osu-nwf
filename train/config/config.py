@@ -23,6 +23,7 @@ class FetcherEnum:
     THREE_POINT_UV = "three_point_uv"
     PRESSURE_MAP = "pressure_map"
     WAVE_HEIGHT = "wave_height"
+    WAVE_PERIOD = "wave_period"
     WAVE_HEIGHT_CLASS = "wave_height_class"
     WIND_DIRECTION = "wind_direction"
     WIND_VELOCITY = "wind_velocity"
@@ -68,11 +69,11 @@ class NWFConfig:
     def feature_fetcher(self) -> FetcherBase:
         match self.__feature_fetcher:
             case FetcherEnum.RETWET_BASE:
-                return fetcher.retwet.RetwetBase
+                return fetcher.retwet.RetwetBaseFetcher
             case FetcherEnum.THREE_POINT_BASE:
-                return fetcher.retwet.ThereePoint
+                return fetcher.retwet.ThereePointFetcher
             case FetcherEnum.THREE_POINT_UV:
-                return fetcher.retwet.ThereePointUV
+                return fetcher.retwet.ThereePointUVFetcher
             case FetcherEnum.PRESSURE_MAP:
                 return fetcher.pressure_map.PressureImagePathFetcher
             case name:
@@ -83,6 +84,8 @@ class NWFConfig:
         match self.__truth_fetcher:
             case FetcherEnum.WAVE_HEIGHT:
                 return fetcher.wave.WaveHeightFetcher
+            case FetcherEnum.WAVE_PERIOD:
+                return fetcher.wave.WavePeriodFetcher
             case FetcherEnum.WAVE_HEIGHT_CLASS:
                 return fetcher.wave.WaveHeightClassFetcher
             case FetcherEnum.WIND_DIRECTION:
@@ -110,6 +113,8 @@ class NWFConfig:
         match self.__truth_fetcher:
             case FetcherEnum.WAVE_HEIGHT:
                 return losses.wave.WaveHeightLoss
+            case FetcherEnum.WAVE_PERIOD:
+                return losses.wave.WavePeriodLoss
             case FetcherEnum.WAVE_HEIGHT_CLASS:
                 return losses.wave.WaveHeightClassLoss
             case FetcherEnum.WIND_DIRECTION:
@@ -125,7 +130,7 @@ class NWFConfig:
     def num_class(self) -> int:
         # NOTE: num classはtruthに依存している。
         match self.__truth_fetcher:
-            case FetcherEnum.WAVE_HEIGHT:
+            case FetcherEnum.WAVE_HEIGHT | FetcherEnum.WAVE_PERIOD:
                 return 1
             case FetcherEnum.WAVE_HEIGHT_CLASS:
                 return 27

@@ -4,7 +4,7 @@ import math
 from ml.dataset.generator.fetcher.fetcher_base import FetcherBase
 
 
-class RetwetBase(FetcherBase):
+class RetwetBaseFetcher(FetcherBase):
     header = [
         "datetime",
         "month_sin",
@@ -148,7 +148,7 @@ WHERE
 """
 
 
-class ThereePoint(FetcherBase):
+class ThereePointFetcher(FetcherBase):
     header = [
         "datetime",
         "month_sin",
@@ -270,7 +270,7 @@ WHERE
 """
 
 
-class ThereePointUV(ThereePoint):
+class ThereePointUVFetcher(ThereePointFetcher):
     header = [
         "datetime",
         "month_sin",

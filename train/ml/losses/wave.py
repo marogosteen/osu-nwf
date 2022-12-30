@@ -15,6 +15,19 @@ class WaveHeightLoss(nn.Module):
         return loss
 
 
+class WavePeriodLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.__lossfunc = torch.nn.MSELoss()
+
+    def forward(
+        self, p: torch.Tensor, t: torch.Tensor
+    ) -> torch.Tensor:
+        t = t.to(torch.float32)
+        loss = self.__lossfunc(p, t)
+        return loss
+
+
 class WaveHeightClassLoss(nn.Module):
     def __init__(self):
         super().__init__()
