@@ -11,8 +11,7 @@ class WindDirectionFetcher(FetcherBase):
         super().__init__(target_year, forecast_timedelta, mode)
 
     def conv_record(self, record: list) -> list:
-        record
-        return
+        return record[1:]
 
     def query(
         self, target_year: int, forecast_timedelta: int, mode: str
@@ -64,8 +63,7 @@ class WindVelocityFetcher(FetcherBase):
         super().__init__(target_year, forecast_timedelta, mode)
 
     def conv_record(self, record: list) -> list:
-        record
-        return
+        return record[1:]
 
     def query(
         self, target_year: int, forecast_timedelta: int, mode: str

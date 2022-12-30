@@ -23,11 +23,11 @@ class FetcherBase(metaclass=ABCMeta):
 
     def fetch_many(self) -> tuple[list, list]:
         record_times = []
-        image_paths = []
+        weather_values = []
 
         records = self.__corsor.fetchmany(5000)
         if not records:
-            return record_times, image_paths
+            return record_times, weather_values
 
         record_times = list(map(lambda record: record[0], records))
         weather_values = list(map(self.conv_record, records))
