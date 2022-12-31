@@ -11,15 +11,8 @@ from ml.train_controller import TrainController
 from services.trainreport_writeservice import TrainReportWriteService
 
 
-def train_nwf(
-    forecast_time_delta: int, feature_timerange: int, year: int,
-    nwf_config: config.NWFConfig
-) -> None:
-    dataset_name = os.path.join(
-        nwf_config.dataset_name,
-        f"{forecast_time_delta}hour_later",
-        str(year)
-    )
+def train_nwf(nwf_config: config.NWFConfig) -> None:
+    dataset_name = nwf_config.dataset_name
     print(dataset_name)
 
     report_service = TrainReportWriteService(
@@ -29,10 +22,13 @@ def train_nwf(
     mode = "train"
     dataset_generator = dataset.generator.DatasetGenerator(
         dataset_dir=dataset_name,
-        feature_fetcher=nwf_config.feature_fetcher(year, 0, mode),
+        feature_fetcher=nwf_config.feature_fetcher(
+            nwf_config.target_year, 0, mode
+        ),
         truth_fetcher=nwf_config.truth_fetcher(
-            year, forecast_time_delta, mode),
-        feature_timerange=feature_timerange,
+            nwf_config.target_year, nwf_config.forecast_time_delta, mode
+        ),
+        feature_timerange=nwf_config.feature_timerange,
         mode=mode
     )
     train_dataset: NWFDatasetBase = nwf_config.nwf_dataset(dataset_generator)
@@ -40,10 +36,13 @@ def train_nwf(
     mode = "eval"
     dataset_generator = dataset.generator.DatasetGenerator(
         dataset_dir=dataset_name,
-        feature_fetcher=nwf_config.feature_fetcher(year, 0, mode),
+        feature_fetcher=nwf_config.feature_fetcher(
+            nwf_config.target_year, 0, mode
+        ),
         truth_fetcher=nwf_config.truth_fetcher(
-            year, forecast_time_delta, mode),
-        feature_timerange=feature_timerange,
+            nwf_config.target_year, nwf_config.forecast_time_delta, mode
+        ),
+        feature_timerange=nwf_config.feature_timerange,
         mode=mode
     )
     eval_dataset: NWFDatasetBase = nwf_config.nwf_dataset(dataset_generator)
@@ -82,18 +81,19 @@ def train_nwf(
         net.load_state_dict(torch.load(state_dict_path))
 
     truths, predicts, eval_loss = controller.eval()
-    datetimes = train_dataset.get_datasettimes()
+    datetimes = eval_dataset.get_datasettimes()
     report_service.save_truths(truths, datetimes)
     report_service.save_preds(predicts, datetimes)
-
     print("eval RMSE:", round(eval_loss**0.5, 5))
 
 
 if __name__ == "__main__":
     nwf_config = config.NWFConfig()
 
-    for forecast_time_delta in [1, 3, 6, 9, 12]:
-        for feature_timerange in [1]:
+    for feature_timerange in [1, 2, 3, 4, 5]:
+        nwf_config.feature_timerage = feature_timerange
+        for forecast_time_delta in [1, 3, 6, 9, 12]:
+            nwf_config.forecast_time_delta = forecast_time_delta
             for year in [2016, 2017, 2018, 2019]:
-                train_nwf(
-                    forecast_time_delta, feature_timerange, year, nwf_config)
+                nwf_config.target_year = year
+                train_nwf(nwf_config)

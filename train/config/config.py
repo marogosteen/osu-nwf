@@ -48,7 +48,10 @@ class NWFConfig:
         return os.path.join(
             self.__dataset_type,
             self.__feature_fetcher,
-            self.__truth_fetcher
+            f"timerange_{self.feature_timerange}",
+            self.__truth_fetcher,
+            f"{self.forecast_time_delta}hour_later",
+            str(self.target_year)
         )
 
     @property
@@ -142,3 +145,27 @@ class NWFConfig:
                 return 60
             case name:
                 raise ValueError(f"not match num class ({name}).")
+
+    @property
+    def feature_timerange(self) -> int:
+        return self.__config_json["feature_timerange"]
+
+    @feature_timerange.setter
+    def feature_timerage(self, feature_timerange: int) -> None:
+        self.__config_json["feature_timerange"] = feature_timerange
+
+    @property
+    def forecast_time_delta(self) -> int:
+        return self.__config_json["forecast_time_delta"]
+
+    @forecast_time_delta.setter
+    def forecast_time_delta(self, forecast_time_delta: int) -> None:
+        self.__config_json["forecast_time_delta"] = forecast_time_delta
+
+    @property
+    def target_year(self) -> int:
+        return self.__config_json["target_year"]
+
+    @target_year.setter
+    def target_year(self, target_year: int) -> None:
+        self.__config_json["target_year"] = target_year
