@@ -19,8 +19,14 @@ class DatasetEnum:
 
 class FetcherEnum:
     RETWET_BASE = "retwet_base"
-    THREE_POINT_BASE = "three_point"
+    THREE_POINT = "three_point"
     THREE_POINT_UV = "three_point_uv"
+    ONE_POINT = "one_point"
+    NOT_CONTAIN_DATETIME = "not_contain_datetime"
+    NOT_CONTAIN_WAVE_CLASS = "not_contain_wave_class"
+    NOT_CONTAIN_TEMPERATURE = "not_contain_temperature"
+    NOT_CONTAIN_PRESSURE = "not_contain_pressure"
+    NOT_CONTAIN_NOWPHAS = "not_contain_nowphas"
     PRESSURE_MAP = "pressure_map"
     WAVE_HEIGHT = "wave_height"
     WAVE_PERIOD = "wave_period"
@@ -73,10 +79,22 @@ class NWFConfig:
         match self.__feature_fetcher:
             case FetcherEnum.RETWET_BASE:
                 return fetcher.retwet.RetwetBaseFetcher
-            case FetcherEnum.THREE_POINT_BASE:
+            case FetcherEnum.THREE_POINT:
                 return fetcher.retwet.ThereePointFetcher
             case FetcherEnum.THREE_POINT_UV:
                 return fetcher.retwet.ThereePointUVFetcher
+            case FetcherEnum.ONE_POINT:
+                return fetcher.retwet.OnePointFetcher
+            case FetcherEnum.NOT_CONTAIN_DATETIME:
+                return fetcher.retwet.NotContainDatetimeFetcher
+            case FetcherEnum.NOT_CONTAIN_WAVE_CLASS:
+                return fetcher.retwet.NotContainWaveClassFetcher
+            case FetcherEnum.NOT_CONTAIN_TEMPERATURE:
+                return fetcher.retwet.NotContainTemperatureFetcher
+            case FetcherEnum.NOT_CONTAIN_PRESSURE:
+                return fetcher.retwet.NotContainPressureFetcher
+            case FetcherEnum.NOT_CONTAIN_NOWPHAS:
+                return fetcher.retwet.NotContainNowphasFetcher
             case FetcherEnum.PRESSURE_MAP:
                 return fetcher.pressure_map.PressureImagePathFetcher
             case name:

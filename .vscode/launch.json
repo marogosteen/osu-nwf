@@ -31,6 +31,15 @@
             "justMyCode": true,
         },
         {
+            "name": "analytics",
+            "type": "python",
+            "request": "launch",
+            "program": "${cwd}/analytics/thesis/thesis.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${cwd}/analytics"
+        },
+        {
             "name": "current file",
             "type": "python",
             "request": "launch",

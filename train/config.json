@@ -1,7 +1,7 @@
 {
-    "dataset_type": "retwet",
-    "feature_fetcher": "three_point",
-    "truth_fetcher": "wave_period",
+    "dataset_type": "",
+    "feature_fetcher": "",
+    "truth_fetcher": "",
     "forecasst_time_delta": 1,
     "feature_timerange": 1,
     "target_year": 2018
