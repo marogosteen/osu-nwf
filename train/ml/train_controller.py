@@ -27,7 +27,8 @@ class TrainController:
             train_dataset, batch_size=self.__batch_size, shuffle=True,
             num_workers=os.cpu_count(), pin_memory=True)
         self.__eval_dataloader = DataLoader(
-            eval_dataset, batch_size=self.__batch_size)
+            eval_dataset, batch_size=self.__batch_size,
+            num_workers=os.cpu_count(), pin_memory=True)
         self.__net = net.to(self.__device)
         self.__loss_func = loss_func
         self.__max_endure = max_endure
@@ -48,6 +49,7 @@ class TrainController:
             self.__net.train()
             feature: torch.Tensor
             truth: torch.Tensor
+            pred: torch.Tensor
             for feature, truth in self.__train_dataloader:
                 feature = feature.to(self.__device)
                 truth = truth.to(self.__device)
@@ -83,6 +85,7 @@ class TrainController:
         truths = []
         predicts = []
         self.__net.eval()
+        feature: torch.Tensor
         truth: torch.Tensor
         pred: torch.Tensor
         eval_loss = 0

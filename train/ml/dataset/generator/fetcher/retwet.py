@@ -529,5 +529,5 @@ class NotContainNowphasFetcher(RetwetBaseFetcher):
         next_record.extend(self.conv_wind(record[5], record[6]))
         next_record.extend(self.conv_wind(record[7], record[8]))
         next_record.extend(self.conv_wind(record[9], record[10]))
-        next_record.append(record[11:13])
+        next_record.extend(record[11:13])
         return next_record
