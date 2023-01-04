@@ -1,3 +1,4 @@
+import json
 import os
 
 import torch
@@ -88,12 +89,9 @@ def train_nwf(nwf_config: config.NWFConfig) -> None:
 
 
 if __name__ == "__main__":
-    nwf_config = config.NWFConfig()
-
-    for feature_timerange in [1, 2, 3, 4, 5]:
-        nwf_config.feature_timerage = feature_timerange
-        for forecast_time_delta in [1, 3, 6, 9, 12]:
-            nwf_config.forecast_time_delta = forecast_time_delta
-            for year in [2016, 2017, 2018, 2019]:
-                nwf_config.target_year = year
-                train_nwf(nwf_config)
+    config_json = json.load(open("config.json"))
+    config_json["feature_timerange"] = 1
+    config_json["forecast_time_delta"] = 1
+    config_json["target_year"] = 2018
+    nwf_config = config.NWFConfig(config_json)
+    train_nwf(nwf_config)
