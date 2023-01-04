@@ -16,6 +16,7 @@ class NWFDatasetBase(Dataset):
         self.__truth_names, self.truths = self.__read_dataset(
             generator.truth_path)
         self.__len = len(self.features)
+        print("dataset loaded.")
 
     @property
     def feature_size(self) -> int:

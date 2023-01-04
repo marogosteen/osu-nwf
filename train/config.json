@@ -2,7 +2,7 @@
     "dataset_type": "",
     "feature_fetcher": "",
     "truth_fetcher": "",
-    "forecasst_time_delta": 1,
-    "feature_timerange": 1,
-    "target_year": 2018
+    "forecast_time_delta": "",
+    "feature_timerange": "",
+    "target_year": ""
 }

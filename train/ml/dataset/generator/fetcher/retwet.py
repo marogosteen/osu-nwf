@@ -287,6 +287,38 @@ class OnePointFetcher(RetwetBaseFetcher):
         return next_record
 
 
+class NotContainWindFetcher(RetwetBaseFetcher):
+    """
+    RetwetBaseFetcherを基準に風観測データを含めないRecordFetcher
+    """
+
+    header = [
+        "datetime",
+        "month_sin",
+        "month_cos",
+        "hour_sin",
+        "hour_cos",
+        "is_surge",
+        "is_wind_wave",
+        "temperature",
+        "pressure",
+        "wave_height",
+        "wave_period"
+    ]
+
+    def __init__(
+        self, target_year: int, forecast_timedelta: int, mode: str
+    ) -> None:
+        super().__init__(target_year, forecast_timedelta, mode)
+
+    def conv_record(self, record: list) -> list:
+        next_record = []
+        next_record.extend(self.conv_datetime(record[0]))
+        next_record.extend(self.conv_wave_class(record[-2], record[-1]))
+        next_record.extend(record[11:])
+        return next_record
+
+
 class NotContainDatetimeFetcher(RetwetBaseFetcher):
     """
     RetwetBaseFetcherを基準に時間情報を含めないRecordFetcher

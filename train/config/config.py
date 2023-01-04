@@ -1,4 +1,3 @@
-import json
 import os
 
 import torch
@@ -22,6 +21,7 @@ class FetcherEnum:
     THREE_POINT = "three_point"
     THREE_POINT_UV = "three_point_uv"
     ONE_POINT = "one_point"
+    NOT_CONTAIN_WIND = "not_contain_wind"
     NOT_CONTAIN_DATETIME = "not_contain_datetime"
     NOT_CONTAIN_WAVE_CLASS = "not_contain_wave_class"
     NOT_CONTAIN_TEMPERATURE = "not_contain_temperature"
@@ -37,13 +37,15 @@ class FetcherEnum:
 
 
 class NWFConfig:
-    __cnofig_path = "config.json"
+    __dataset_type_key = "dataset_type"
+    __feature_fetcher_key = "feature_fetcher"
+    __truth_fetcher_key = "truth_fetcher"
+    __feature_timerange_key = "feature_timerange"
+    __forecast_time_delta_key = "forecast_time_delta"
+    __target_year_key = "target_year"
 
-    def __init__(self) -> None:
-        self.__config_json = json.load(open(self.__cnofig_path))
-        self.__dataset_type: str = self.__config_json["dataset_type"]
-        self.__feature_fetcher: str = self.__config_json["feature_fetcher"]
-        self.__truth_fetcher: str = self.__config_json["truth_fetcher"]
+    def __init__(self, config_json: dict) -> None:
+        self.__config_json = config_json
 
     @property
     def config_json(self) -> dict:
@@ -52,21 +54,27 @@ class NWFConfig:
     @property
     def dataset_name(self) -> str:
         return os.path.join(
-            self.__dataset_type,
-            self.__feature_fetcher,
+            self.__config_json[self.__dataset_type_key],
+            self.__config_json[self.__feature_fetcher_key],
             f"timerange_{self.feature_timerange}",
-            self.__truth_fetcher,
+            self.__config_json[self.__truth_fetcher_key],
             f"{self.forecast_time_delta}hour_later",
             str(self.target_year)
         )
 
     @property
-    def dataset_type(self) -> str:
-        return self.__dataset_type
+    def dataset_type(self) -> DatasetEnum:
+        match self.__config_json[self.__dataset_type_key]:
+            case DatasetEnum.PRESSURE_MAP:
+                return DatasetEnum.PRESSURE_MAP
+            case DatasetEnum.RETWET:
+                return DatasetEnum.RETWET
+            case name:
+                raise ValueError(f"not match dataset type ({name}).")
 
     @property
     def nwf_dataset(self) -> NWFDatasetBase:
-        match self.__dataset_type:
+        match self.dataset_type:
             case DatasetEnum.PRESSURE_MAP:
                 return dataset.NWFPressureMap
             case DatasetEnum.RETWET:
@@ -76,7 +84,7 @@ class NWFConfig:
 
     @property
     def feature_fetcher(self) -> FetcherBase:
-        match self.__feature_fetcher:
+        match self.__config_json[self.__feature_fetcher_key]:
             case FetcherEnum.RETWET_BASE:
                 return fetcher.retwet.RetwetBaseFetcher
             case FetcherEnum.THREE_POINT:
@@ -85,6 +93,8 @@ class NWFConfig:
                 return fetcher.retwet.ThereePointUVFetcher
             case FetcherEnum.ONE_POINT:
                 return fetcher.retwet.OnePointFetcher
+            case FetcherEnum.NOT_CONTAIN_WIND:
+                return fetcher.retwet.NotContainWindFetcher
             case FetcherEnum.NOT_CONTAIN_DATETIME:
                 return fetcher.retwet.NotContainDatetimeFetcher
             case FetcherEnum.NOT_CONTAIN_WAVE_CLASS:
@@ -102,7 +112,7 @@ class NWFConfig:
 
     @property
     def truth_fetcher(self) -> FetcherBase:
-        match self.__truth_fetcher:
+        match self.__config_json[self.__truth_fetcher_key]:
             case FetcherEnum.WAVE_HEIGHT:
                 return fetcher.wave.WaveHeightFetcher
             case FetcherEnum.WAVE_PERIOD:
@@ -120,7 +130,7 @@ class NWFConfig:
 
     @property
     def net(self) -> torch.nn.Module:
-        match self.__dataset_type:
+        match self.dataset_type:
             case DatasetEnum.PRESSURE_MAP:
                 return models.DenseNet
             case DatasetEnum.RETWET:
@@ -131,7 +141,7 @@ class NWFConfig:
     @property
     def loss_func(self) -> torch.nn.Module:
         # NOTE: loss funcはtruthに依存している。
-        match self.__truth_fetcher:
+        match self.__config_json[self.__truth_fetcher_key]:
             case FetcherEnum.WAVE_HEIGHT:
                 return losses.wave.WaveHeightLoss
             case FetcherEnum.WAVE_PERIOD:
@@ -150,7 +160,7 @@ class NWFConfig:
     @property
     def num_class(self) -> int:
         # NOTE: num classはtruthに依存している。
-        match self.__truth_fetcher:
+        match self.__config_json[self.__truth_fetcher_key]:
             case FetcherEnum.WAVE_HEIGHT | FetcherEnum.WAVE_PERIOD:
                 return 1
             case FetcherEnum.WAVE_HEIGHT_CLASS:
@@ -166,24 +176,12 @@ class NWFConfig:
 
     @property
     def feature_timerange(self) -> int:
-        return self.__config_json["feature_timerange"]
-
-    @feature_timerange.setter
-    def feature_timerage(self, feature_timerange: int) -> None:
-        self.__config_json["feature_timerange"] = feature_timerange
+        return self.__config_json[self.__feature_timerange_key]
 
     @property
     def forecast_time_delta(self) -> int:
-        return self.__config_json["forecast_time_delta"]
-
-    @forecast_time_delta.setter
-    def forecast_time_delta(self, forecast_time_delta: int) -> None:
-        self.__config_json["forecast_time_delta"] = forecast_time_delta
+        return self.__config_json[self.__forecast_time_delta_key]
 
     @property
     def target_year(self) -> int:
-        return self.__config_json["target_year"]
-
-    @target_year.setter
-    def target_year(self, target_year: int) -> None:
-        self.__config_json["target_year"] = target_year
+        return self.__config_json[self.__target_year_key]
