@@ -37,11 +37,9 @@ def conv_pix_index(points: np.ndarray) -> np.ndarray:
     return np.round(points).astype(int)
 
 
-def get_power_maps():
+def get_power_maps(geo_points: np.ndarray):
     """各観測点における圧力の勢力Mapを返す"""
-    geo_points = np.array(cursor.execute(
-        open(STATION_POINTS_QUERY_PATH).read()
-    ).fetchall())
+    xx, yy = np.meshgrid(range(X_GRID_SIZE), range(Y_GRID_SIZE))
     pix_points = conv_pix_index(geo_points)
     observed_count = len(pix_points)
     yy_ = np.repeat(np.arange(Y_GRID_SIZE).reshape(-1, 1), X_GRID_SIZE, axis=1)
@@ -94,58 +92,66 @@ def get_power_maps():
     return maps
 
 
-db = sqlite3.connect(DBPATH)
-cursor = db.cursor()
-xx, yy = np.meshgrid(range(X_GRID_SIZE), range(Y_GRID_SIZE))
+def main():
+    db = sqlite3.connect(DBPATH)
+    cursor = db.cursor()
 
-power_maps = get_power_maps()
-power_maps = power_maps[:, TRIM_Y_START:, TRIM_X_START:TRIM_X_END]
-cursor = cursor.execute(open(PRESSURES_QUERY_PATH).read())
-observed_count = len(power_maps)
-err_threshold = observed_count // 2
-colormap = cm.get_cmap("turbo")
-print("now generating ...")
-while True:
-    press_records: list[list[str]] = cursor.fetchmany(5000)
-    if not press_records:
-        break
+    geo_points = np.array(cursor.execute(
+        open(STATION_POINTS_QUERY_PATH).read()
+    ).fetchall())
+    power_maps = get_power_maps(geo_points)
+    power_maps = power_maps[:, TRIM_Y_START:, TRIM_X_START:TRIM_X_END]
+    cursor = cursor.execute(open(PRESSURES_QUERY_PATH).read())
+    observed_count = len(power_maps)
+    err_threshold = observed_count // 2
+    colormap = cm.get_cmap("turbo")
+    print("now generating ...")
+    while True:
+        press_records: list[list[str]] = cursor.fetchmany(5000)
+        if not press_records:
+            break
 
-    for img_num, record in enumerate(press_records):
-        press_map_items = power_maps.copy()
+        for img_num, record in enumerate(press_records):
+            press_map_items = power_maps.copy()
 
-        record_time = datetime.datetime.strptime(record[0], RECORD_PATTERN)
-        write_path = os.path.join(
-            WRITE_IMAGE_DIR, record_time.strftime(FILENAME_PATTERN)+".png"
-        )
-        write_dir = os.path.dirname(write_path)
-        if not os.path.exists(write_dir):
-            os.makedirs(write_dir)
-
-        pressures = np.array(
-            list(map(
-                lambda pressure: float(pressure) if pressure else None,
-                record[1].split(",")
-            )),
-            dtype=float
-        ).reshape(observed_count, 1, 1)
-
-        if np.isnan(pressures).sum() > err_threshold:
-            msg = "欠損値が半数以上で、画像化できません。record time: {}".format(
-                record_time.strftime(RECORD_PATTERN)
+            record_time = datetime.datetime.strptime(record[0], RECORD_PATTERN)
+            write_path = os.path.join(
+                WRITE_IMAGE_DIR, record_time.strftime(FILENAME_PATTERN)+".png"
             )
-            raise RuntimeError(msg)
+            write_dir = os.path.dirname(write_path)
+            if not os.path.exists(write_dir):
+                os.makedirs(write_dir)
 
-        press_map_items *= pressures
-        press_map = press_map_items.sum(axis=0)
+            pressures = np.array(
+                list(map(
+                    lambda pressure: float(pressure) if pressure else None,
+                    record[1].split(",")
+                )),
+                dtype=float
+            ).reshape(observed_count, 1, 1)
 
-        press_map = press_map[-1::-1]
-        press_map = 255 * colormap((press_map - MIN_PRESSURE) / PRESSURE_RANGE)
-        press_map = press_map.astype(np.uint8)
-        pil_img = Image.fromarray(press_map)
-        pil_img.save(write_path, quolity=100)
+            if np.isnan(pressures).sum() > err_threshold:
+                msg = "欠損値が半数以上で、画像化できません。record time: {}".format(
+                    record_time.strftime(RECORD_PATTERN)
+                )
+                raise RuntimeError(msg)
 
-        if img_num % 100 == 0:
-            print("\r"+write_path, end="")
-print()
+            press_map_items *= pressures
+            press_map = press_map_items.sum(axis=0)
 
-print("interpolated.")
+            press_map = press_map[-1::-1]
+            press_map = 255 * \
+                colormap((press_map - MIN_PRESSURE) / PRESSURE_RANGE)
+            press_map = press_map.astype(np.uint8)
+            pil_img = Image.fromarray(press_map)
+            pil_img.save(write_path, quolity=100)
+
+            if img_num % 100 == 0:
+                print("\r"+write_path, end="")
+    print()
+
+    print("interpolated.")
+
+
+if __name__ == "__main__":
+    main()
