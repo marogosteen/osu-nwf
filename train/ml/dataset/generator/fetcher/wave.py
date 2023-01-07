@@ -77,6 +77,9 @@ class WaveHeightClassFetcher(FetcherBase):
 
     def conv_record(self, record: list) -> list:
         height = record[1]
+        if height is None:
+            return [None]
+
         hc = height // 0.5
         hc = 0 if hc < 0 else hc
         hc = 8 if hc > 8 else hc
