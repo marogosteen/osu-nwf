@@ -42,10 +42,12 @@ class DatasetGenerator:
         if os.path.exists(self.__feature_path):
             self.__feature_file.close()
             os.remove(self.__feature_path)
+            print(f"removed feature of dataset({self.__feature_path}).")
 
         if os.path.exists(self.__truth_path):
             self.__truth_file.close()
             os.remove(self.__truth_path)
+            print(f"removed truth of dataset({self.__truth_path}).")
 
     def generate(self) -> None:
         if self.is_generated():

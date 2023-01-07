@@ -59,7 +59,6 @@ for feature_fetcher_name in FEATURE_FETCHER_NAMES:
         feature_list = []
         for data, label in eval_dataset:
             feature_list.append(data)
-
         input_tensor = torch.stack(feature_list, dim=0).to(DEVICE)
         print("input tensor shape: ", input_tensor.shape)
 
