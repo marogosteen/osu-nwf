@@ -99,7 +99,7 @@ cursor = db.cursor()
 xx, yy = np.meshgrid(range(X_GRID_SIZE), range(Y_GRID_SIZE))
 
 power_maps = get_power_maps()
-power_maps = power_maps[TRIM_Y_START:, TRIM_X_START:TRIM_X_END]
+power_maps = power_maps[:, TRIM_Y_START:, TRIM_X_START:TRIM_X_END]
 cursor = cursor.execute(open(PRESSURES_QUERY_PATH).read())
 observed_count = len(power_maps)
 err_threshold = observed_count // 2
