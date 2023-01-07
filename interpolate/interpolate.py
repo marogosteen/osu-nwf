@@ -6,10 +6,16 @@ import numpy as np
 from matplotlib import cm
 from PIL import Image
 
-NUM_NEED_ARG = 1
-UINT8 = 255
-Y_GRID_SIZE = 250
-X_GRID_SIZE = 200
+"""
+南北距離: 1510.4762535695306 km
+東西距離:  3137.89171030225 km
+"""
+
+Y_GRID_SIZE = 151
+X_GRID_SIZE = 314
+TRIM_X_START = 60
+TRIM_X_END = 186
+TRIM_Y_START = 50
 MIN_PRESSURE = 955
 MAX_PRESSURE = 1060
 PRESSURE_RANGE = MAX_PRESSURE - MIN_PRESSURE
@@ -26,8 +32,8 @@ def conv_pix_index(points: np.ndarray) -> np.ndarray:
     mins = np.min(points, axis=0)
     maxs = np.max(points - mins, axis=0)
     points = (points - mins) / maxs
-    points[:, 0] *= Y_GRID_SIZE
-    points[:, 1] *= X_GRID_SIZE
+    points[:, 0] *= Y_GRID_SIZE - 1
+    points[:, 1] *= X_GRID_SIZE - 1
     return np.round(points).astype(int)
 
 
@@ -93,7 +99,7 @@ cursor = db.cursor()
 xx, yy = np.meshgrid(range(X_GRID_SIZE), range(Y_GRID_SIZE))
 
 power_maps = get_power_maps()
-power_maps = power_maps[:, int(Y_GRID_SIZE / 3):, :int(X_GRID_SIZE / 3 * 2)]
+power_maps = power_maps[TRIM_Y_START:, TRIM_X_START:TRIM_X_END]
 cursor = cursor.execute(open(PRESSURES_QUERY_PATH).read())
 observed_count = len(power_maps)
 err_threshold = observed_count // 2
@@ -105,7 +111,7 @@ while True:
         break
 
     for img_num, record in enumerate(press_records):
-        press_map_pairts = power_maps.copy()
+        press_map_items = power_maps.copy()
 
         record_time = datetime.datetime.strptime(record[0], RECORD_PATTERN)
         write_path = os.path.join(
@@ -115,10 +121,13 @@ while True:
         if not os.path.exists(write_dir):
             os.makedirs(write_dir)
 
-        pressures = np.array(list(map(
-            lambda pressure: float(pressure) if pressure else None,
-            record[1].split(",")
-        )), dtype=float).reshape(observed_count, 1, 1)
+        pressures = np.array(
+            list(map(
+                lambda pressure: float(pressure) if pressure else None,
+                record[1].split(",")
+            )),
+            dtype=float
+        ).reshape(observed_count, 1, 1)
 
         if np.isnan(pressures).sum() > err_threshold:
             msg = "欠損値が半数以上で、画像化できません。record time: {}".format(
@@ -126,8 +135,8 @@ while True:
             )
             raise RuntimeError(msg)
 
-        press_map_pairts *= pressures
-        press_map = press_map_pairts.sum(axis=0)
+        press_map_items *= pressures
+        press_map = press_map_items.sum(axis=0)
 
         press_map = press_map[-1::-1]
         press_map = 255 * colormap((press_map - MIN_PRESSURE) / PRESSURE_RANGE)
@@ -139,4 +148,4 @@ while True:
             print("\r"+write_path, end="")
 print()
 
-print("done.")
+print("interpolated.")
