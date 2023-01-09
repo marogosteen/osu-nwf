@@ -10,7 +10,7 @@ class RetwetBaseFetcher(FetcherBase):
     """
 
     header = [
-        "datetime",
+        "feature_datetime",
         "month_sin",
         "month_cos",
         "hour_sin",
@@ -158,7 +158,7 @@ class ThereePointFetcher(RetwetBaseFetcher):
     """
 
     header = [
-        "datetime",
+        "feature_datetime",
         "month_sin",
         "month_cos",
         "hour_sin",
@@ -202,7 +202,7 @@ class ThereePointUVFetcher(ThereePointFetcher):
     """
 
     header = [
-        "datetime",
+        "feature_datetime",
         "month_sin",
         "month_cos",
         "hour_sin",
@@ -257,7 +257,7 @@ class OnePointFetcher(RetwetBaseFetcher):
     """
 
     header = [
-        "datetime",
+        "feature_datetime",
         "month_sin",
         "month_cos",
         "hour_sin",
@@ -293,7 +293,7 @@ class NotContainWindFetcher(RetwetBaseFetcher):
     """
 
     header = [
-        "datetime",
+        "feature_datetime",
         "month_sin",
         "month_cos",
         "hour_sin",
@@ -325,7 +325,7 @@ class NotContainDatetimeFetcher(RetwetBaseFetcher):
     """
 
     header = [
-        "datetime",
+        "feature_datetime",
         "ukb_velocity",
         "ukb_sin_direction",
         "ukb_cos_direction",
@@ -372,7 +372,7 @@ class NotContainWaveClassFetcher(RetwetBaseFetcher):
     """
 
     header = [
-        "datetime",
+        "feature_datetime",
         "month_sin",
         "month_cos",
         "hour_sin",
@@ -421,7 +421,7 @@ class NotContainTemperatureFetcher(RetwetBaseFetcher):
     """
 
     header = [
-        "datetime",
+        "feature_datetime",
         "month_sin",
         "month_cos",
         "hour_sin",
@@ -472,7 +472,7 @@ class NotContainPressureFetcher(RetwetBaseFetcher):
     """
 
     header = [
-        "datetime",
+        "feature_datetime",
         "month_sin",
         "month_cos",
         "hour_sin",
@@ -524,7 +524,7 @@ class NotContainNowphasFetcher(RetwetBaseFetcher):
     """
 
     header = [
-        "datetime",
+        "feature_datetime",
         "month_sin",
         "month_cos",
         "hour_sin",

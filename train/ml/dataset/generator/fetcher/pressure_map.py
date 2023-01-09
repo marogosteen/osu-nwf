@@ -5,7 +5,7 @@ from ml.dataset.generator.fetcher.fetcher_base import FetcherBase
 
 
 class PressureImagePathFetcher(FetcherBase):
-    header = ["datetime", "image_path"]
+    header = ["feature_datetime", "image_path"]
 
     def __init__(
         self, target_year: int, forecast_timedelta: int, mode: str

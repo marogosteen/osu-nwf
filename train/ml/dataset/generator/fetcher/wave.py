@@ -2,7 +2,7 @@ from ml.dataset.generator.fetcher.fetcher_base import FetcherBase
 
 
 class WaveHeightFetcher(FetcherBase):
-    header = ["datetime", "height"]
+    header = ["feature_datetime", "height"]
 
     def __init__(
         self, target_year: int, forecast_timedelta: int, mode: str
@@ -35,7 +35,7 @@ WHERE
 
 
 class WavePeriodFetcher(FetcherBase):
-    header = ["datetime", "period"]
+    header = ["feature_datetime", "period"]
 
     def __init__(
         self, target_year: int, forecast_timedelta: int, mode: str
@@ -68,7 +68,7 @@ WHERE
 
 
 class WaveHeightClassFetcher(FetcherBase):
-    header = ["datetime", "wave_height_class"]
+    header = ["feature_datetime", "wave_height_class"]
 
     def __init__(
         self, target_year: int, forecast_timedelta: int, mode: str

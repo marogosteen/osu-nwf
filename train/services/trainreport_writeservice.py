@@ -41,7 +41,7 @@ class TrainReportWriteService:
 
         _, ax = plt.subplots()
         ax.set(
-            title=f"best train loss: {bestloss}",
+            title=f"best eval loss: {bestloss}",
             xlabel="Epochs",
             ylabel="MSE Loss")
         ax.plot(
